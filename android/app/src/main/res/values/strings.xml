@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hok Vocabulary</string>
+    <string name="title_activity_main">Hok Vocabulary</string>
+    <string name="package_name">com.hok.vocab</string>
+    <string name="custom_url_scheme">com.hok.vocab</string>
+</resources>

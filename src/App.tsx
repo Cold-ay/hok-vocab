@@ -1,106 +1,40 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
+import './redesign.css'
 import { I18nContext, UI_MESSAGES, mapFromLangToUiLang, useI18n, tpl } from './i18n'
 import type { I18nKey } from './i18n'
+import { getDateKey, loadJson, saveJson, computeStreak, formatStudyTime } from './app-utils'
+import type { DailyLog, VocabWord, ConceptNode } from './app-utils'
 
 type TabKey = 'home' | 'learn' | 'stats' | 'me'
 type ThemeMode = 'light' | 'dark'
 type LearnView = 'tree' | 'card' | 'add-word'
-
-interface DailyLog {
-  date: string
-  cardsLearned: number
-  studySeconds: number
-  learnedIds?: string[]
-  totalCards?: number
-}
-
-function getDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function loadJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
-  } catch { return fallback }
-}
-
-function saveJson<T>(key: string, value: T) {
-  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* quota exceeded */ }
-}
-
-function computeStreak(logs: DailyLog[]): number {
-  if (logs.length === 0) return 0
-  const sorted = [...logs].filter(l => l.cardsLearned > 0).sort((a, b) => b.date.localeCompare(a.date))
-  if (sorted.length === 0) return 0
-
-  const todayKey = getDateKey()
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayKey = getDateKey(yesterday)
-
-  if (sorted[0].date !== todayKey && sorted[0].date !== yesterdayKey) return 0
-
-  let streak = 1
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1].date + 'T00:00:00')
-    const curr = new Date(sorted[i].date + 'T00:00:00')
-    const diff = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24)
-    if (diff === 1) streak++
-    else break
-  }
-  return streak
-}
-
-function formatStudyTime(totalSeconds: number): string {
-  if (totalSeconds < 60) return `${totalSeconds}s`
-  const mins = Math.floor(totalSeconds / 60)
-  if (mins < 60) return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  const remainMins = mins % 60
-  return remainMins > 0 ? `${hrs}h${remainMins}m` : `${hrs}h`
-}
-
-interface VocabWord {
-  id: string
-  term: string
-  pronunciation: string
-  translation: string
-  definition: string
-  example: string
-  exampleTranslation: string
-  localeTag: string
-  image: string
-}
-
-interface ConceptNode {
-  id: string
-  name: string
-  color?: string
-  icon?: string
-  words?: VocabWord[]
-  children?: ConceptNode[]
-}
 
 const CONCEPT_COLORS = [
   '#3cc8a0', '#4a7cff', '#f5a623', '#9b59b6',
   '#e84393', '#ef4444', '#06b6d4', '#f97316',
 ]
 
+function Glyph({ name = 'book' }: { name?: string }) {
+  const paths: Record<string, string> = {
+    edit: 'M4 16 16 4l4 4L8 20H4v-4ZM14 6l4 4',
+    trash: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7',
+    book: 'M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4V4Zm16 0h-4a3 3 0 0 0-3 3v14a4 4 0 0 1 4-2h3V4Z',
+    target: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+    bolt: 'm13 2-9 12h7l-1 8 10-13h-8l1-7Z',
+    globe: 'M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Zm0 0a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+    star: 'm12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6Z',
+    sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2',
+    moon: 'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z',
+    clock: 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+  }
+  return <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name] || paths.book} /></svg>
+}
+
 const CONCEPT_ICONS = [
-  { emoji: '\uD83D\uDCDA', label: 'Books' },
-  { emoji: '\uD83D\uDCD6', label: 'Open Book' },
-  { emoji: '\u270F\uFE0F', label: 'Pencil' },
-  { emoji: '\uD83C\uDFAF', label: 'Target' },
-  { emoji: '\u26A1', label: 'Lightning' },
-  { emoji: '\uD83D\uDD0C', label: 'Plug' },
-  { emoji: '\uD83D\uDCBB', label: 'Laptop' },
-  { emoji: '\uD83D\uDD2C', label: 'Microscope' },
-  { emoji: '\u2699\uFE0F', label: 'Gear' },
-  { emoji: '\uD83C\uDFA8', label: 'Palette' },
-  { emoji: '\uD83E\uDDEA', label: 'Test Tube' },
-  { emoji: '\uD83C\uDF0D', label: 'Globe' },
+  { emoji: 'book', label: 'Book' }, { emoji: 'target', label: 'Target' },
+  { emoji: 'bolt', label: 'Lightning' }, { emoji: 'globe', label: 'Globe' },
+  { emoji: 'star', label: 'Star' }, { emoji: 'clock', label: 'Clock' },
 ]
 
 const defaultTree: ConceptNode = {
@@ -144,14 +78,11 @@ const LANGUAGES = [
 
 const translateText = async (text: string, toLang: string): Promise<string> => {
   if (!text) return text
-  try {
-    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`)
-    const data = await res.json()
-    return data[0].map((item: string[]) => item[0]).join('')
-  } catch (e) {
-    console.error('Translation failed', e)
-    return text
-  }
+  const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(toLang)}&dt=t&q=${encodeURIComponent(text)}`, { signal: AbortSignal.timeout(10000) })
+  if (!res.ok) throw new Error('Translation unavailable')
+  const data = await res.json()
+  if (!Array.isArray(data?.[0])) throw new Error('Invalid translation response')
+  return data[0].map((item: string[]) => item[0]).join('')
 }
 
 function collectWords(node: ConceptNode): VocabWord[] {
@@ -217,7 +148,7 @@ function ConceptBranch(props: {
               onSelect(node.id)
             } else if (hasChildren) {
               setIsExpanded(!isExpanded)
-            }
+            } else { onAddWord(node.id) }
           }}
         >
           <div className="tree-label-wrap">
@@ -231,7 +162,7 @@ function ConceptBranch(props: {
             )}
             {node.icon && (
               <span className="tree-icon-badge">
-                {node.icon}
+                <Glyph name={node.icon} />
               </span>
             )}
             <span className="tree-label">{node.name}</span>
@@ -313,22 +244,18 @@ function WordForm({
   const [exampleTranslation, setExampleTranslation] = useState(initialWord?.exampleTranslation || '')
   const [image, setImage] = useState(initialWord?.image || '')
   const [isFetching, setIsFetching] = useState(false)
+  const [fetchError, setFetchError] = useState('')
 
   const { t } = useI18n()
 
   const handleFetchDictionary = async () => {
     if (!term) return alert(t('alertEnterTerm'))
     setIsFetching(true)
-
-    setTranslation('')
-    setPronunciation('')
-    setDefinition('')
-    setExample('')
-    setExampleTranslation('')
+    setFetchError('')
 
     try {
       const dictLang = fromLang.split('-')[0]
-      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictLang}/${term}`)
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictLang}/${encodeURIComponent(term.trim())}`, { signal: AbortSignal.timeout(10000) })
       
       let foundDef = ''
       let foundExTl = ''
@@ -347,9 +274,9 @@ function WordForm({
         }
       }
 
-      setDefinition(foundDef)
-      setExampleTranslation(foundExTl)
-      setPronunciation(foundPronunciation)
+      if (foundDef) setDefinition(foundDef)
+      if (foundExTl) setExampleTranslation(foundExTl)
+      if (foundPronunciation) setPronunciation(foundPronunciation)
 
       const translatedTerm = await translateText(term, learnLang)
       if (translatedTerm && translatedTerm !== term) {
@@ -363,23 +290,22 @@ function WordForm({
         }
       }
     } catch {
-      alert(t('alertFetchFailed'))
-    }
-    setIsFetching(false)
+      setFetchError(t('alertFetchFailed'))
+    } finally { setIsFetching(false) }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!term) return alert(t('alertTermRequired'))
+    if (!term.trim()) return alert(t('alertTermRequired'))
     onSave({
       id: initialWord?.id || 'w-' + Date.now(),
-      term,
+      term: term.trim(),
       translation,
       pronunciation,
       definition,
       example,
       exampleTranslation,
-      image: image || 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=900&q=80',
+      image: image || '/word-cover.svg',
       localeTag: initialWord?.localeTag || 'NEW',
     })
   }
@@ -390,10 +316,11 @@ function WordForm({
       <p className="page-subtitle">{initialWord ? t('editingIn') : t('addingTo')} <strong>{conceptName}</strong></p>
 
       <div className="form-group">
-        <label>{t('term')}</label>
+        <label htmlFor="field-1">{t('term')}</label>
         <div className="input-with-button">
-          <input
+          <input id="field-1"
             className="form-input"
+            disabled={isFetching}
             value={term}
             onChange={(e) => {
               setTerm(e.target.value)
@@ -412,14 +339,15 @@ function WordForm({
             onClick={handleFetchDictionary}
             disabled={isFetching}
           >
-            {isFetching ? '...' : t('fetch')}
+            {isFetching ? t('lookingUp') : t('fetch')}
           </button>
         </div>
       </div>
 
+      {fetchError && <p className="form-error" role="alert">{fetchError}</p>}
       <div className="form-group">
-        <label>{t('translation')}</label>
-        <input
+        <label htmlFor="field-2">{t('translation')}</label>
+        <input id="field-2"
           className="form-input"
           value={translation}
           onChange={(e) => setTranslation(e.target.value)}
@@ -428,8 +356,8 @@ function WordForm({
       </div>
 
       <div className="form-group">
-        <label>{t('pronunciation')}</label>
-        <input
+        <label htmlFor="field-3">{t('pronunciation')}</label>
+        <input id="field-3"
           className="form-input"
           value={pronunciation}
           onChange={(e) => setPronunciation(e.target.value)}
@@ -438,8 +366,8 @@ function WordForm({
       </div>
 
       <div className="form-group">
-        <label>{t('formDefinition')}</label>
-        <textarea
+        <label htmlFor="field-4">{t('formDefinition')}</label>
+        <textarea id="field-4"
           className="form-input"
           rows={2}
           value={definition}
@@ -449,8 +377,8 @@ function WordForm({
       </div>
 
       <div className="form-group">
-        <label>{t('exampleSentence')}</label>
-        <textarea
+        <label htmlFor="field-5">{t('exampleSentence')}</label>
+        <textarea id="field-5"
           className="form-input"
           rows={2}
           value={example}
@@ -460,8 +388,8 @@ function WordForm({
       </div>
 
       <div className="form-group">
-        <label>{t('exampleTranslation')}</label>
-        <textarea
+        <label htmlFor="field-6">{t('exampleTranslation')}</label>
+        <textarea id="field-6"
           className="form-input"
           rows={2}
           value={exampleTranslation}
@@ -501,12 +429,35 @@ function WordForm({
         <button type="button" className="ghost-btn" onClick={onCancel}>
           {t('cancel')}
         </button>
-        <button type="submit" className="primary-btn">
+        <button type="submit" className="primary-btn" disabled={isFetching}>
           {t('saveWord')}
         </button>
       </div>
     </form>
   )
+}
+
+function Dialog({ children, className = '', onClose }: { children: React.ReactNode; className?: string; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  useEffect(() => { closeRef.current = onClose }, [onClose])
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    const element = ref.current
+    const focusable = () => Array.from(element?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? [])
+    const focusFrame = requestAnimationFrame(() => focusable()[0]?.focus())
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeRef.current() }
+      if (event.key !== 'Tab') return
+      const elements = focusable()
+      const first = elements[0], last = elements[elements.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    element?.addEventListener('keydown', onKey)
+    return () => { cancelAnimationFrame(focusFrame); element?.removeEventListener('keydown', onKey); previous?.focus() }
+  }, [])
+  return <div className="modal-overlay"><div ref={ref} className={`modal-content ${className}`} role="dialog" aria-modal="true" aria-labelledby="concept-dialog-title">{children}</div></div>
 }
 
 function App() {
@@ -541,21 +492,9 @@ function App() {
   })
   const [selectedCalDay, setSelectedCalDay] = useState<string | null>(null)
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>(() => loadJson('hok-dailyLogs', []))
-  const [sessionSeconds, setSessionSeconds] = useState(0)
-  const prevLearnedCountRef = useRef<number | null>(null)
 
   const uiLang = mapFromLangToUiLang(fromLang)
   const t = useCallback((key: I18nKey) => UI_MESSAGES[uiLang][key] ?? UI_MESSAGES.en[key], [uiLang])
-
-  // Daily renewal: reset learnedWordIds at the start of each new day
-  useEffect(() => {
-    const lastDate = localStorage.getItem('hok-lastActiveDate')
-    const todayKey = getDateKey()
-    if (lastDate && lastDate !== todayKey) {
-      setLearnedWordIds([])
-    }
-    localStorage.setItem('hok-lastActiveDate', todayKey)
-  }, [])
 
   // Persist state to localStorage on change
   useEffect(() => { saveJson('hok-theme', theme) }, [theme])
@@ -567,33 +506,31 @@ function App() {
   useEffect(() => { saveJson('hok-dailyLogs', dailyLogs) }, [dailyLogs])
   useEffect(() => { saveJson('hok-goals', goals) }, [goals])
 
-  // Study time timer: ticks every second while app is visible
+  // Count only visible, active flashcard study. Flush partial sessions on exit.
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>
-    const start = () => { interval = setInterval(() => setSessionSeconds(s => s + 1), 1000) }
-    const stop = () => clearInterval(interval)
-
-    start()
-    const onVisibility = () => { document.hidden ? stop() : start() }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility) }
-  }, [])
-
-  // Flush session seconds into daily log every 10 seconds
-  useEffect(() => {
-    if (sessionSeconds > 0 && sessionSeconds % 10 === 0) {
-      const todayKey = getDateKey()
+    if (activeTab !== 'learn' || learnView !== 'card') return
+    let startedAt = document.hidden ? null : Date.now()
+    const flush = () => {
+      if (startedAt === null) return
+      const seconds = Math.floor((Date.now() - startedAt) / 1000)
+      startedAt = document.hidden ? null : Date.now()
+      if (!seconds) return
+      const date = getDateKey()
       setDailyLogs(prev => {
-        const idx = prev.findIndex(l => l.date === todayKey)
-        if (idx >= 0) {
-          const updated = [...prev]
-          updated[idx] = { ...updated[idx], studySeconds: updated[idx].studySeconds + 10 }
-          return updated
-        }
-        return [...prev, { date: todayKey, cardsLearned: 0, studySeconds: 10, learnedIds: [], totalCards: 0 }]
+        const existing = prev.find(log => log.date === date)
+        return existing
+          ? prev.map(log => log.date === date ? { ...log, studySeconds: log.studySeconds + seconds } : log)
+          : [...prev, { date, cardsLearned: 0, studySeconds: seconds, learnedIds: [] }]
       })
     }
-  }, [sessionSeconds])
+    const onVisibility = () => {
+      if (document.hidden) flush()
+      else startedAt = Date.now()
+    }
+    const interval = setInterval(flush, 10000)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisibility); flush() }
+  }, [activeTab, learnView])
 
   // Track cards learned per day with word IDs
   const recordCardLearned = useCallback((wordId: string, total: number) => {
@@ -635,16 +572,6 @@ function App() {
     [allWords, bookmarkedWordIds]
   )
 
-  // Track when learnedWordIds grows (a new card was marked learned)
-  useEffect(() => {
-    if (prevLearnedCountRef.current !== null && learnedWordIds.length > prevLearnedCountRef.current) {
-      const newIds = learnedWordIds.slice(prevLearnedCountRef.current)
-      const total = collectWords(tree).length
-      for (const id of newIds) recordCardLearned(id, total)
-    }
-    prevLearnedCountRef.current = learnedWordIds.length
-  }, [learnedWordIds, recordCardLearned, tree])
-
   const todayLog = useMemo(
     () => dailyLogs.find(l => l.date === getDateKey()),
     [dailyLogs],
@@ -667,7 +594,7 @@ function App() {
   }, [dailyLogs])
 
   const weekBarData = useMemo(() => {
-    const days = [t('weekMon'), t('weekTue'), t('weekWed'), t('weekThu'), t('weekFri'), t('weekSat'), t('weekSun')]
+    const days = Array.from({ length: 7 })
     const now = new Date()
     const todayDow = now.getDay()
     const todayIdx = todayDow === 0 ? 6 : todayDow - 1
@@ -737,11 +664,12 @@ function App() {
       }))
     }
 
-    const translatedChildren = await processNodes(tree.children || [])
-    setTree({ ...tree, children: translatedChildren })
-    
-    setFromLang(newLang)
-    setIsTranslating(false)
+    try {
+      const [translatedTree] = await processNodes([tree])
+      setTree(translatedTree)
+      setFromLang(newLang)
+    } catch { alert(t('alertFetchFailed')) }
+    finally { setIsTranslating(false) }
   }
 
   const handleAddChildClick = (parentId: string) => {
@@ -931,11 +859,8 @@ function App() {
     }
     
     if (!editingWord) {
-      // jump to the newly added word (it will be at the end)
-      // Since wordsInConcept hasn't updated yet, we can't reliably set the index to wordsInConcept.length
-      // It's safer to just set to 0 or leave it alone, but wait, the wordsInConcept will include it next render.
-      // Let's just set index to 0 or end.
-      setCurrentIndex(0)
+      // Own words precede descendant words in the flattened deck.
+      setCurrentIndex(selectedNode.words?.length ?? 0)
     }
     setLearnView('card')
     setEditingWord(null)
@@ -962,6 +887,7 @@ function App() {
     if (!learnedWordIds.includes(currentWord.id)) {
       setLearnedWordIds((prev) => [...prev, currentWord.id])
     }
+    recordCardLearned(currentWord.id, totalCount)
     moveCard(1)
   }
 
@@ -976,6 +902,7 @@ function App() {
 
   const handleReviewOutcome = (wordId: string, remembered: boolean) => {
     if (remembered) {
+      recordCardLearned(wordId, totalCount)
       if (!learnedWordIds.includes(wordId)) {
         setLearnedWordIds((prev) => [...prev, wordId])
       }
@@ -998,6 +925,7 @@ function App() {
   }
 
   const handleBackArrow = () => {
+    if (activeTab !== 'learn') { setActiveTab('home'); return }
     if (learnView === 'add-word' && editingWord) {
       exitForm()
     } else {
@@ -1007,14 +935,22 @@ function App() {
   }
 
   const showBackArrow =
-    (activeTab === 'learn' && learnView !== 'tree') || activeTab !== 'learn'
+    (activeTab === 'learn' && learnView !== 'tree') || (activeTab !== 'learn' && activeTab !== 'home')
 
   return (
     <I18nContext.Provider value={{ t, uiLang }}>
       <div className={`app-shell ${theme}`}>
-        <div className="mobile-frame">
+        <div className="mobile-frame"><a className="skip-link" href="#main-content">{t('skipToContent')}</a>
+        <aside className="sidebar">
+          <a className="brand" href="#" onClick={(e) => { e.preventDefault(); setActiveTab('home') }}><span className="brand-mark"><Glyph /></span><span>hok<span className="brand-dot">.</span><small>VOCABULARY</small></span></a>
+          <p className="nav-caption">{t('yourWorkspace')}</p>
+          <nav aria-label={t('mainNavigation')}>{tabs.map(tab => <button key={tab.key} className={`side-link ${activeTab === tab.key ? 'active' : ''}`} aria-current={activeTab === tab.key ? 'page' : undefined} onClick={() => { setActiveTab(tab.key); if (tab.key === 'learn') setLearnView('tree') }}>{tab.icon}<span>{t(tab.labelKey)}</span>{activeTab === tab.key && <span className="nav-dot" />}</button>)}</nav>
+          <div className="sidebar-note"><Glyph name="globe" /><strong>{t('littleEveryDay')}</strong><p>{t('homeSubtitle')}</p></div>
+          <div className="local-status"><span />{t('savedOnDevice')}</div>
+        </aside>
         {/* ── Header ── */}
         <header className="top-bar">
+          <span className="top-location">{t(tabs.find(tab => tab.key === activeTab)!.labelKey)}</span>
           <button
             aria-label={t('ariaBack')}
             className={`icon-btn ${showBackArrow ? '' : 'hidden'}`}
@@ -1039,12 +975,12 @@ function App() {
               setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
             }
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            <Glyph name={theme === 'light' ? 'moon' : 'sun'} />
           </button>
         </header>
 
         {/* ── Body ── */}
-        <main className="screen-body">
+        <main id="main-content" className="screen-body" tabIndex={-1}>
           {/* ─── LEARN: Tree browser ─── */}
           {activeTab === 'learn' && learnView === 'tree' && (
             <div className="tree-page">
@@ -1076,6 +1012,8 @@ function App() {
                   learnedWordIds={learnedWordIds}
                 />
               ))}
+              {!(tree.children?.length || tree.words?.length) && <div className="empty-state"><span className="empty-symbol"><Glyph /></span><h3>{t('createFirstConcept')}</h3><p>{t('conceptTreesHint')}</p><button className="primary-btn" onClick={() => handleAddChildClick(tree.id)}>+ {t('createConcept')}</button></div>}
+              {!!tree.words?.length && <ConceptBranch node={{ ...tree, children: [] }} onSelect={enterConcept} onAddChild={handleAddChildClick} onAddWord={handleAddWordClick} onEditConcept={handleEditConceptClick} onDeleteConcept={handleDeleteConceptClick} learnedWordIds={learnedWordIds} />}
               <div className="tree-stats">
                 <div className="tree-stat-item">
                   <span>{t('total')}</span>
@@ -1092,20 +1030,19 @@ function App() {
               </div>
 
               {(addingConceptToId || editingConcept) && (
-                <div className="modal-overlay">
-                  <div className="modal-content concept-creator-modal">
-                    <h3 className="modal-title">{editingConcept ? t('editConceptTitle') : t('newConceptTitle')}</h3>
+                <Dialog className="concept-creator-modal" onClose={() => { setAddingConceptToId(null); setEditingConcept(null) }}>
+                    <h3 id="concept-dialog-title" className="modal-title">{editingConcept ? t('editConceptTitle') : t('newConceptTitle')}</h3>
                     
                     <div className="form-group">
-                      <label>{t('conceptName')}</label>
-                      <input
+                      <label htmlFor="field-7">{t('conceptName')}</label>
+                      <input id="field-7"
                         autoFocus
                         className="form-input"
                         placeholder={t('conceptNamePlaceholder')}
                         value={newConceptName}
                         onChange={(e) => setNewConceptName(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') editingConcept ? submitEditConcept() : submitNewConcept()
+                          if (e.key === 'Enter') { if (editingConcept) submitEditConcept(); else submitNewConcept() }
                           if (e.key === 'Escape') { setAddingConceptToId(null); setEditingConcept(null) }
                         }}
                       />
@@ -1120,7 +1057,7 @@ function App() {
                             key={color}
                             className={`color-swatch swatch-${i} ${newConceptColor === color ? 'selected' : ''}`}
                             onClick={() => setNewConceptColor(color)}
-                            aria-label={`Select color ${color}`}
+                            aria-label={`Select color ${color}`} aria-pressed={newConceptColor === color}
                           />
                         ))}
                       </div>
@@ -1135,9 +1072,9 @@ function App() {
                             key={icon.emoji}
                             className={`icon-swatch ${newConceptIcon === icon.emoji ? 'selected' : ''}`}
                             onClick={() => setNewConceptIcon(icon.emoji)}
-                            aria-label={icon.label}
+                            aria-label={icon.label} aria-pressed={newConceptIcon === icon.emoji}
                           >
-                            {icon.emoji}
+                            <Glyph name={icon.emoji} />
                           </button>
                         ))}
                       </div>
@@ -1147,7 +1084,7 @@ function App() {
                       <h4 className="concept-creator-label">{t('preview')}</h4>
                       <div className={`concept-preview-card preview-color-${CONCEPT_COLORS.indexOf(newConceptColor)}`}>
                         <div className="concept-preview-icon">
-                          <span>{newConceptIcon}</span>
+                          <Glyph name={newConceptIcon} />
                         </div>
                         <div className="concept-preview-info">
                           <span className="concept-preview-name">
@@ -1164,8 +1101,7 @@ function App() {
                         {editingConcept ? t('save') : t('add')}
                       </button>
                     </div>
-                  </div>
-                </div>
+                </Dialog>
               )}
             </div>
           )}
@@ -1210,45 +1146,45 @@ function App() {
                         onClick={handleEditWordClick} 
                         title={t('editWordTitle')}
                       >
-                        ✏️
+                        <Glyph name="edit" />
                       </button>
                       <button 
                         className="ghost-btn icon-only-btn danger-btn" 
                         onClick={handleDeleteWordClick} 
                         title={t('deleteWordTitle')}
                       >
-                        🗑️
+                        <Glyph name="trash" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="info-box">
-                    <h4>📖 {t('definition')}</h4>
+                  {currentWord.definition && <div className="info-box">
+                    <h4><Glyph name="book" /> {t('definition')}</h4>
                     <p>{currentWord.definition}</p>
-                  </div>
+                  </div>}
 
-                  <div className="example-box">
+                  {(currentWord.example || currentWord.exampleTranslation) && <div className="example-box">
                     <h4>{t('example')}</h4>
                     <p className="example-sentence">{currentWord.example}</p>
                     <p className="example-tl">{currentWord.exampleTranslation}</p>
-                  </div>
+                  </div>}
 
                   <div className="card-actions">
                     <button className="primary-btn" onClick={markLearned}>
                       {t('markLearned')}
                     </button>
-                    <button className="bookmark-btn" onClick={toggleBookmark}>
-                      {bookmarkedWordIds.includes(currentWord.id) ? '★' : '☆'}
+                    <button className="bookmark-btn" onClick={toggleBookmark} aria-label={t('starred')} aria-pressed={bookmarkedWordIds.includes(currentWord.id)}>
+                      <Glyph name="star" />
                     </button>
                   </div>
                 </div>
               </section>
 
               <div className="nav-arrows">
-                <button className="arrow-btn" onClick={() => moveCard(-1)}>
+                <button className="arrow-btn" aria-label={t('previousWord')} onClick={() => moveCard(-1)}>
                   ‹
                 </button>
-                <button className="arrow-btn" onClick={() => moveCard(1)}>
+                <button className="arrow-btn" aria-label={t('nextWord')} onClick={() => moveCard(1)}>
                   ›
                 </button>
               </div>
@@ -1274,23 +1210,27 @@ function App() {
           {activeTab === 'home' && (
             <div className="home-page">
               <header className="home-header">
-                <h1 className="app-title">{t('homeTitle')} <span className="sparkle">✨</span></h1>
-                <p className="app-subtitle">{t('homeSubtitle')} 🚀</p>
+                <div><p className="eyebrow">{t('yourLearningSpace')}</p><h1 className="app-title">{t('welcomeBack')}</h1><p className="app-subtitle">{t('homeSubtitle')}</p></div>
+                <button className="primary-btn header-add" onClick={() => { setActiveTab('learn'); handleAddWordClick(tree.id) }}>+ {t('addWord')}</button>
               </header>
 
+              <section className="study-hero">
+                <div className="hero-copy"><span className="hero-kicker"><span />{t('smallSteps')}</span><h2>{t('heroTitle')}</h2><p>{t('heroDescription')}</p><button className="hero-cta" onClick={() => { setActiveTab('learn'); if (totalCount) enterConcept(tree.id); else handleAddChildClick(tree.id) }}>{totalCount ? t('continueLearning') : t('createFirstConcept')} <span aria-hidden="true">↗</span></button><span className="hero-footnote">{totalCount ? `${reviewQueue.length} ${t('wordsReady')}` : t('buildYourLibrary')}</span></div>
+                <div className="hero-art" aria-hidden="true"><span className="art-orbit orbit-one"/><span className="art-orbit orbit-two"/><div className="art-card art-card-back"><span>안녕하세요</span><small>annyeonghaseyo</small></div><div className="art-card art-card-front"><span className="art-language">ENGLISH → KOREAN</span><strong>Hello<span className="art-dot">.</span></strong><span className="art-rule"/><span className="art-translation">안녕하세요</span><small>A little word. A new connection.</small></div><span className="art-star">✦</span><span className="art-check">✓</span></div>
+              </section>
               <section className="dashboard-cards">
                 <div className="progress-card">
                   <div className="card-header-row">
                     <h3>{t('todaysProgress')}</h3>
-                    <span className="flame-icon">🔥</span>
+                    <Glyph name="target" />
                   </div>
                   <div className="progress-stats">
                     <div className="stat-box">
-                      <span className="stat-label">◎ {t('cardsToday')}</span>
+                      <span className="stat-label">{t('cardsToday')}</span>
                       <span className="stat-value">{cardsToday}</span>
                     </div>
                     <div className="stat-box">
-                      <span className="stat-label">🔥 {t('streak')}</span>
+                      <span className="stat-label">{t('streak')}</span>
                       <span className="stat-value">{streak} {streak === 1 ? t('day') : t('days')}</span>
                     </div>
                   </div>
@@ -1333,7 +1273,7 @@ function App() {
 
               <section className="continue-learning">
                 <div className="section-header">
-                  <h3><span className="chart-icon">📈</span> {t('continueLearning')}</h3>
+                  <h3><Glyph name="bolt" /> {t('continueLearning')}</h3>
                   <button type="button" className="see-all-btn" onClick={() => setActiveTab('learn')}>{t('seeAll')}</button>
                 </div>
                 
@@ -1353,7 +1293,7 @@ function App() {
                     </select>
                   </div>
                   {reviewQueue.length === 0 ? (
-                    <p className="empty">{t('allCaughtUp')}</p>
+                    <div className="empty-state"><span className="empty-symbol"><Glyph name={totalCount ? 'target' : 'book'} /></span><h3>{totalCount ? t('allCaughtUp') : t('yourFirstWord')}</h3><p>{totalCount ? t('comeBackPractice') : t('firstWordHint')}</p><button className="ghost-btn" onClick={() => { setActiveTab('learn'); if (totalCount) enterConcept(tree.id); else handleAddWordClick(tree.id) }}>{totalCount ? t('continueLearning') : t('addWord')} <span aria-hidden="true">→</span></button></div>
                   ) : (
                     <div className="review-list">
                       {reviewQueue.map((word) => (
@@ -1387,7 +1327,7 @@ function App() {
 
           {/* ─── STATS ─── */}
           {activeTab === 'stats' && (() => {
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            const days = [t('weekMon'), t('weekTue'), t('weekWed'), t('weekThu'), t('weekFri'), t('weekSat'), t('weekSun')]
             const todayDow = new Date().getDay()
             const todayIdx = todayDow === 0 ? 6 : todayDow - 1
             const weekTotal = weekBarData.reduce((a, b) => a + b, 0)
@@ -1405,22 +1345,22 @@ function App() {
 
                 <div className="stats-card-grid">
                   <div className="stats-gradient-card gradient-green">
-                    <span className="stats-card-icon">🔥</span>
+                    <span className="stats-card-icon"><Glyph name="bolt" /></span>
                     <span className="stats-card-value">{streak}</span>
                     <span className="stats-card-label">{t('dayStreak')}</span>
                   </div>
                   <div className="stats-gradient-card gradient-pink">
-                    <span className="stats-card-icon">◎</span>
+                    <span className="stats-card-icon"><Glyph name="target" /></span>
                     <span className="stats-card-value">{cardsToday}</span>
                     <span className="stats-card-label">{t('cardsToday')}</span>
                   </div>
                   <div className="stats-gradient-card gradient-blue">
-                    <span className="stats-card-icon">🏅</span>
+                    <span className="stats-card-icon"><Glyph name="star" /></span>
                     <span className="stats-card-value">{learnedCount}</span>
                     <span className="stats-card-label">{t('cardsLearned')}</span>
                   </div>
                   <div className="stats-gradient-card gradient-orange">
-                    <span className="stats-card-icon">🕐</span>
+                    <span className="stats-card-icon"><Glyph name="clock" /></span>
                     <span className="stats-card-value">{formatStudyTime(todayStudySeconds)}</span>
                     <span className="stats-card-label">{t('studyTime')}</span>
                   </div>
@@ -1428,7 +1368,7 @@ function App() {
 
                 <div className="stats-week-card">
                   <div className="stats-week-header">
-                    <span className="stats-week-title">📅 {t('thisWeek')}</span>
+                    <span className="stats-week-title"><Glyph name="clock" /> {t('thisWeek')}</span>
                     <span className="stats-week-total">{tpl(t('weekCardsTotal'), { n: weekTotal })}</span>
                   </div>
                   <div className="stats-bar-chart">
@@ -1487,7 +1427,7 @@ function App() {
                 {/* ── Current Goal ── */}
                 <div className="goal-card">
                   <div className="goal-card-header">
-                    <span className="goal-card-title">🎯 {t('currentGoalsTitle')}</span>
+                    <span className="goal-card-title"><Glyph name="target" /> {t('currentGoalsTitle')}</span>
                     <button type="button" className="goal-edit-btn" onClick={() => {
                       setGoalDraft({ ...goals })
                       setShowGoalEditor(true)
@@ -1503,7 +1443,7 @@ function App() {
                       {goals.dailyCards !== null && (
                         <div className="goal-row">
                           <div className="goal-row-info">
-                            <span className="goal-row-label">📖 {t('dailyCards')}</span>
+                            <span className="goal-row-label"><Glyph name="book" /> {t('dailyCards')}</span>
                             <span className="goal-row-numbers">{cardsToday} / {goals.dailyCards}</span>
                           </div>
                           <div className="goal-progress-bar">
@@ -1516,7 +1456,7 @@ function App() {
                       {goals.weeklyCards !== null && (
                         <div className="goal-row">
                           <div className="goal-row-info">
-                            <span className="goal-row-label">📅 {t('weeklyCards')}</span>
+                            <span className="goal-row-label"><Glyph name="clock" /> {t('weeklyCards')}</span>
                             <span className="goal-row-numbers">{cardsThisWeek} / {goals.weeklyCards}</span>
                           </div>
                           <div className="goal-progress-bar">
@@ -1529,7 +1469,7 @@ function App() {
                       {goals.streakDays !== null && (
                         <div className="goal-row">
                           <div className="goal-row-info">
-                            <span className="goal-row-label">🔥 {t('streakGoal')}</span>
+                            <span className="goal-row-label"><Glyph name="bolt" /> {t('streakGoal')}</span>
                             <span className="goal-row-numbers">{streak} / {goals.streakDays} {t('days')}</span>
                           </div>
                           <div className="goal-progress-bar">
@@ -1550,7 +1490,7 @@ function App() {
 
                       <div className="goal-toggle-group">
                         <div className="goal-toggle-header">
-                          <label htmlFor="goal-daily-toggle" className="goal-toggle-label">📖 {t('dailyCards')}</label>
+                          <label htmlFor="goal-daily-toggle" className="goal-toggle-label"><Glyph name="book" /> {t('dailyCards')}</label>
                           <button
                             type="button"
                             id="goal-daily-toggle"
@@ -1575,7 +1515,7 @@ function App() {
 
                       <div className="goal-toggle-group">
                         <div className="goal-toggle-header">
-                          <label htmlFor="goal-weekly-toggle" className="goal-toggle-label">📅 {t('weeklyCards')}</label>
+                          <label htmlFor="goal-weekly-toggle" className="goal-toggle-label"><Glyph name="clock" /> {t('weeklyCards')}</label>
                           <button
                             type="button"
                             id="goal-weekly-toggle"
@@ -1600,7 +1540,7 @@ function App() {
 
                       <div className="goal-toggle-group">
                         <div className="goal-toggle-header">
-                          <label htmlFor="goal-streak-toggle" className="goal-toggle-label">🔥 {t('dayStreakLabel')}</label>
+                          <label htmlFor="goal-streak-toggle" className="goal-toggle-label"><Glyph name="bolt" /> {t('dayStreakLabel')}</label>
                           <button
                             type="button"
                             id="goal-streak-toggle"
@@ -1632,14 +1572,14 @@ function App() {
                       </div>
                     </div>
                   </div>
-                )}x
+                )}
 
                 {/* ── Study Activity Calendar ── */}
                 <div className="cal-card">
                   <div className="cal-header">
-                    <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
+                    <button className="cal-nav-btn" aria-label={t('previousMonth')} onClick={prevMonth}>‹</button>
                     <span className="cal-month-label">{monthLabel}</span>
-                    <button className="cal-nav-btn" onClick={nextMonth}>›</button>
+                    <button className="cal-nav-btn" aria-label={t('nextMonth')} onClick={nextMonth}>›</button>
                   </div>
                   <div className="cal-weekdays">
                     {([t('weekMon'), t('weekTue'), t('weekWed'), t('weekThu'), t('weekFri'), t('weekSat'), t('weekSun')] as string[]).map(d => (
@@ -1695,7 +1635,7 @@ function App() {
 
                 {/* ── Lifetime Stats ── */}
                 <div className="lifetime-card">
-                  <h3 className="lifetime-title">📊 {t('lifetimeStatsTitle')}</h3>
+                  <h3 className="lifetime-title">{t('lifetimeStatsTitle')}</h3>
                   <div className="lifetime-grid">
                     <div className="lifetime-item">
                       <span className="lifetime-value">{learnedCount}</span>
@@ -1727,8 +1667,8 @@ function App() {
                 {/* ── Settings ── */}
                 <h3 className="settings-section-title">{t('settings')}</h3>
                 <div className="settings-card">
-                  <div className="settings-row-v2" onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}>
-                    <span className="settings-row-icon">🌙</span>
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }} aria-pressed={theme === 'dark'} className="settings-row-v2" onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}>
+                    <span className="settings-row-icon"><Glyph name="moon" /></span>
                     <span className="settings-row-label">{t('darkMode')}</span>
                     <div className={`toggle-switch ${theme === 'dark' ? 'on' : ''}`}>
                       <div className="toggle-knob" />
@@ -1737,8 +1677,8 @@ function App() {
 
                   <div className="settings-divider" />
 
-                  <div className="settings-row-v2" onClick={() => setShowLanguagePanel(true)}>
-                    <span className="settings-row-icon">🌐</span>
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }} className="settings-row-v2" onClick={() => setShowLanguagePanel(true)}>
+                    <span className="settings-row-icon"><Glyph name="globe" /></span>
                     <span className="settings-row-label">{t('language')}</span>
                     <div className="settings-row-trail">
                       <span className="settings-row-value">
@@ -1750,8 +1690,8 @@ function App() {
 
                   <div className="settings-divider" />
 
-                  <div className="settings-row-v2" onClick={() => setShowCollectedWords(prev => !prev)}>
-                    <span className="settings-row-icon">⭐</span>
+                  <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }} className="settings-row-v2" onClick={() => setShowCollectedWords(prev => !prev)}>
+                    <span className="settings-row-icon"><Glyph name="star" /></span>
                     <span className="settings-row-label">{t('collectedWords')}</span>
                     <div className="settings-row-trail">
                       <span className="settings-row-value">{bookmarkedWords.length}</span>
@@ -1880,11 +1820,12 @@ function App() {
         </main>
 
         {/* ── Bottom Nav ── */}
-        <nav className="bottom-nav">
+        <nav className="bottom-nav" aria-label={t('mainNavigation')}>
           {tabs.map((tab) => (
             <button
               key={tab.key}
               className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
+              aria-current={activeTab === tab.key ? 'page' : undefined}
               onClick={() => {
                 setActiveTab(tab.key)
                 if (tab.key === 'learn') setLearnView('tree')

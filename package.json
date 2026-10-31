@@ -11,17 +11,18 @@
     "cap:sync": "npm run build && npx cap sync android",
     "cap:sync:all": "npm run build && npx cap sync",
     "cap:android": "npm run cap:sync && npx cap open android",
-    "cap:ios": "npm run cap:sync:all && npx cap open ios"
+    "cap:ios": "npm run cap:sync:all && npx cap open ios",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@capacitor/core": "7.5.0",
+    "@capacitor/core": "^7.6.10",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@capacitor/android": "7.5.0",
-    "@capacitor/cli": "7.5.0",
-    "@capacitor/ios": "7.5.0",
+    "@capacitor/android": "^7.6.10",
+    "@capacitor/cli": "^7.6.10",
+    "@capacitor/ios": "^7.6.10",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",

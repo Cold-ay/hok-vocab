@@ -1666,6 +1666,7 @@ function App() {
 
                 {/* ── Settings ── */}
                 <h3 className="settings-section-title">{t('settings')}</h3>
+                <a className="ghost-btn privacy-link" href="./privacy.html">{t('privacyData')}</a>
                 <div className="settings-card">
                   <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } }} aria-pressed={theme === 'dark'} className="settings-row-v2" onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}>
                     <span className="settings-row-icon"><Glyph name="moon" /></span>

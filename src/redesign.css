@@ -129,3 +129,5 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .stats-bar-label { font-size: 12px; }
 
 @media (max-height: 600px) { .sidebar { overflow-y: auto; }.sidebar-note { display: none; }.nav-caption { margin-top: 24px; }.local-status { margin-top: 24px; } }
+
+.privacy-link { align-self: flex-start; text-decoration: none; display: inline-flex; align-items: center; }

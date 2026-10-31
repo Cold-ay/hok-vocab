@@ -34,3 +34,14 @@ The redesign follows the included `.agents/skills/ui-ux-pro-max` skill. Design d
 ## Native apps
 
 See [CAPACITOR.md](CAPACITOR.md) for Android/iOS setup. After web changes, run `npm run cap:sync` for Android or `npm run cap:sync:all` for both platforms, then build with the platform IDE. Native simulator/device execution is separate from the browser build.
+
+## Separate store releases
+
+Version 1.0.0 (build 1) is prepared for independent iOS and Android releases. See [App Store instructions](store/app-store/RELEASE.md) and [Play Store instructions](store/play-store/RELEASE.md). Signing credentials are supplied later and are never included in the source.
+
+- `npm run release:ios:unsigned`: verify an unsigned iOS archive (macOS/Xcode/CocoaPods required).
+- `npm run release:android:unsigned`: build an unsigned Android App Bundle (JDK 21/SDK 36 required).
+- `npm run release:ios` / `npm run release:android`: produce signed outputs after configuring credentials.
+- `python3 scripts/package-release-kits.py`: create separate source release ZIPs in `releases/`.
+
+The two GitHub Actions templates in `store/workflow-templates/` build unsigned native verification artifacts once enabled with workflow-authorized GitHub access. They are templates because the current GitHub token lacks permission to create workflows. They do not publish to either store. Store listing drafts, icons, a Play feature graphic, privacy inventory, and a bundled privacy page are included. Supply real support/contact details and host the privacy page before submitting.

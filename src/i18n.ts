@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react'
 export type UiLang = 'en' | 'fr' | 'es' | 'zh-TW' | 'zh-CN' | 'ko' | 'ja'
 
 const en = {
+  privacyData: 'Privacy & data',
   previousMonth: 'Previous month', nextMonth: 'Next month',
   previousWord: 'Previous word', nextWord: 'Next word',
   lookingUp: 'Looking up…', skipToContent: 'Skip to content',
@@ -164,6 +165,7 @@ type MessageKey = keyof typeof en
 
 const fr: Record<MessageKey, string> = {
   ...en,
+  privacyData: 'Confidentialité et données',
   yourWorkspace: "VOTRE ESPACE",
   mainNavigation: "Navigation principale",
   littleEveryDay: "Un peu chaque jour.",
@@ -322,6 +324,7 @@ const fr: Record<MessageKey, string> = {
 
 const es: Record<MessageKey, string> = {
   ...en,
+  privacyData: 'Privacidad y datos',
   yourWorkspace: "TU ESPACIO",
   mainNavigation: "Navegación principal",
   littleEveryDay: "Un poco cada día.",
@@ -480,6 +483,7 @@ const es: Record<MessageKey, string> = {
 
 const zhTW: Record<MessageKey, string> = {
   ...en,
+  privacyData: '隱私與資料',
   yourWorkspace: "你的學習空間",
   mainNavigation: "主要導覽",
   littleEveryDay: "每天進步一點。",
@@ -638,6 +642,7 @@ const zhTW: Record<MessageKey, string> = {
 
 const zhCN: Record<MessageKey, string> = {
   ...en,
+  privacyData: '隐私与数据',
   yourWorkspace: "你的学习空间",
   mainNavigation: "主要导航",
   littleEveryDay: "每天进步一点。",
@@ -796,6 +801,7 @@ const zhCN: Record<MessageKey, string> = {
 
 const ko: Record<MessageKey, string> = {
   ...en,
+  privacyData: '개인정보 및 데이터',
   yourWorkspace: "나의 학습 공간",
   mainNavigation: "주 메뉴",
   littleEveryDay: "매일 조금씩.",
@@ -954,6 +960,7 @@ const ko: Record<MessageKey, string> = {
 
 const ja: Record<MessageKey, string> = {
   ...en,
+  privacyData: 'プライバシーとデータ',
   yourWorkspace: "学習スペース",
   mainNavigation: "メインナビゲーション",
   littleEveryDay: "毎日、少しずつ。",

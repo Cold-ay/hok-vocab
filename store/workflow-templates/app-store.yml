@@ -1,0 +1,34 @@
+name: Prepare App Store release
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['ios/**', 'scripts/**', 'release.config.json', 'package*.json', '.github/workflows/app-store.yml']
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check Xcode and CocoaPods
+        run: |
+          xcodebuild -version
+          pod --version
+      - run: npm ci
+      - run: npm run release:ios:unsigned
+      - name: Preserve archive permissions
+        run: ditto -c -k --sequesterRsrc --keepParent releases/app-store/*.xcarchive releases/app-store/Hok-unsigned.xcarchive.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-store-unsigned
+          path: |
+            releases/app-store/*.zip
+            releases/app-store/build-info.json
+          if-no-files-found: error
+          retention-days: 14

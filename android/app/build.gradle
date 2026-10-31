@@ -1,14 +1,28 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.application'
+
+def packageInfo = new JsonSlurper().parse(rootProject.file('../package.json'))
+def releaseInfo = new JsonSlurper().parse(rootProject.file('../release.config.json'))
+def unsignedRelease = providers.gradleProperty('HOK_UNSIGNED_RELEASE').getOrElse('false') == 'true'
+def signingValues = ['HOK_KEYSTORE_PATH', 'HOK_KEYSTORE_PASSWORD', 'HOK_KEY_ALIAS', 'HOK_KEY_PASSWORD'].collectEntries { key -> [(key): System.getenv(key)] }
+def hasSigning = signingValues.values().every { value -> value != null && !value.isEmpty() }
+// An unsigned release is intentional only when explicitly requested.
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { task -> task.name.toLowerCase().contains('release') } && !unsignedRelease && !hasSigning) {
+        throw new GradleException('Release signing is missing. Supply HOK_KEYSTORE_* / HOK_KEY_* environment variables or explicitly set -PHOK_UNSIGNED_RELEASE=true.')
+    }
+}
 
 android {
     namespace "com.hok.vocab"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.hok.vocab"
+        applicationId releaseInfo.appId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode releaseInfo.buildNumber
+        versionName packageInfo.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +30,19 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasSigning && !unsignedRelease) {
+            release {
+                storeFile file(signingValues.HOK_KEYSTORE_PATH)
+                storePassword signingValues.HOK_KEYSTORE_PASSWORD
+                keyAlias signingValues.HOK_KEY_ALIAS
+                keyPassword signingValues.HOK_KEY_PASSWORD
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasSigning && !unsignedRelease) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

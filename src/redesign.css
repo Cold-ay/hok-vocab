@@ -133,3 +133,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .privacy-link { align-self: flex-start; text-decoration: none; display: inline-flex; align-items: center; }
 .brand-mark { width: 44px; height: 44px; border-radius: 0; background: transparent; }
 .brand-mark img { display: block; width: 100%; height: 100%; }
+
+/* Native WKWebView safe areas; viewport-fit=cover supplies these insets. */
+.mobile-frame { padding-top: env(safe-area-inset-top, 0px); }
+.app-shell .top-bar { padding-top: 0; }
+.sidebar { top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); }

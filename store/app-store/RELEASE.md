@@ -27,3 +27,5 @@ Do not put `.p12`, `.p8`, provisioning profiles, account passwords, or API keys 
 For later updates, increment package.json version and release.config.json buildNumber; synchronize MARKETING_VERSION and CURRENT_PROJECT_VERSION in the Xcode project. `npm run release:check` detects drift.
 
 Requirement checked 2026-10-31: https://developer.apple.com/news/upcoming-requirements/
+
+Publishing setup (November 10, 2026): the iOS target is 15.0+ for the installed Xcode 27 toolchain. Public support/privacy sources are in docs/ and are published through the repository’s GitHub Pages branch deployment.

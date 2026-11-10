@@ -131,3 +131,5 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-height: 600px) { .sidebar { overflow-y: auto; }.sidebar-note { display: none; }.nav-caption { margin-top: 24px; }.local-status { margin-top: 24px; } }
 
 .privacy-link { align-self: flex-start; text-decoration: none; display: inline-flex; align-items: center; }
+.brand-mark { width: 44px; height: 44px; border-radius: 0; background: transparent; }
+.brand-mark img { display: block; width: 100%; height: 100%; }

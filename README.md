@@ -45,3 +45,5 @@ Version 1.0.0 (build 1) is prepared for independent iOS and Android releases. Se
 - `python3 scripts/package-release-kits.py`: create separate source release ZIPs in `releases/`.
 
 The two GitHub Actions templates in `store/workflow-templates/` build unsigned native verification artifacts once enabled with workflow-authorized GitHub access. They are templates because the current GitHub token lacks permission to create workflows. They do not publish to either store. Store listing drafts, icons, a Play feature graphic, privacy inventory, and a bundled privacy page are included. Supply real support/contact details and host the privacy page before submitting.
+
+Publishing setup (November 10, 2026): the iOS target is 15.0+ for the installed Xcode 27 toolchain. Public support/privacy sources are in docs/ and are published through the repository’s GitHub Pages branch deployment.

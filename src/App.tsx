@@ -942,7 +942,7 @@ function App() {
       <div className={`app-shell ${theme}`}>
         <div className="mobile-frame"><a className="skip-link" href="#main-content">{t('skipToContent')}</a>
         <aside className="sidebar">
-          <a className="brand" href="#" onClick={(e) => { e.preventDefault(); setActiveTab('home') }}><span className="brand-mark"><Glyph /></span><span>hok<span className="brand-dot">.</span><small>VOCABULARY</small></span></a>
+          <a className="brand" href="#" onClick={(e) => { e.preventDefault(); setActiveTab('home') }}><span className="brand-mark"><img src="./hok-icon.svg" alt="" width="44" height="44" /></span><span>hok<span className="brand-dot">.</span><small>VOCABULARY</small></span></a>
           <p className="nav-caption">{t('yourWorkspace')}</p>
           <nav aria-label={t('mainNavigation')}>{tabs.map(tab => <button key={tab.key} className={`side-link ${activeTab === tab.key ? 'active' : ''}`} aria-current={activeTab === tab.key ? 'page' : undefined} onClick={() => { setActiveTab(tab.key); if (tab.key === 'learn') setLearnView('tree') }}>{tab.icon}<span>{t(tab.labelKey)}</span>{activeTab === tab.key && <span className="nav-dot" />}</button>)}</nav>
           <div className="sidebar-note"><Glyph name="globe" /><strong>{t('littleEveryDay')}</strong><p>{t('homeSubtitle')}</p></div>

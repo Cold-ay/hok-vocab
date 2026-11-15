@@ -4,7 +4,9 @@ import './redesign.css'
 import { I18nContext, UI_MESSAGES, mapFromLangToUiLang, useI18n, tpl } from './i18n'
 import type { I18nKey } from './i18n'
 import { getDateKey, loadJson, saveJson, computeStreak, formatStudyTime } from './app-utils'
-import type { DailyLog, VocabWord, ConceptNode } from './app-utils'
+import type { DailyLog, VocabWord, ConceptNode, GenderForms } from './app-utils'
+import { GenderFields, GenderSummary } from './WordGenderForms'
+import { genderLanguage, lookupGenderForms } from './gender-lookup'
 
 type TabKey = 'home' | 'learn' | 'stats' | 'me'
 type ThemeMode = 'light' | 'dark'
@@ -245,53 +247,69 @@ function WordForm({
   const [image, setImage] = useState(initialWord?.image || '')
   const [isFetching, setIsFetching] = useState(false)
   const [fetchError, setFetchError] = useState('')
+  const [genderNotice, setGenderNotice] = useState('')
+  const [termForms, setTermForms] = useState<GenderForms | undefined>(initialWord?.termForms)
+  const [translationForms, setTranslationForms] = useState<GenderForms | undefined>(initialWord?.translationForms)
 
   const { t } = useI18n()
 
+  // Keep an existing word's language stable when global preferences change.
+  const [termLanguage] = useState(() => initialWord?.termForms?.language || initialWord?.termLanguage || fromLang)
+  const [translationLanguage] = useState(() => initialWord?.translationForms?.language || initialWord?.translationLanguage || learnLang)
+  const sourceGenderLanguage = genderLanguage(termLanguage)
+  const targetGenderLanguage = genderLanguage(translationLanguage)
+  const lookupVersion = useRef(0)
+  useEffect(() => () => { lookupVersion.current++ }, [])
+
   const handleFetchDictionary = async () => {
-    if (!term) return alert(t('alertEnterTerm'))
+    if (!term.trim() || isFetching) return
+    const version = ++lookupVersion.current
     setIsFetching(true)
     setFetchError('')
-
+    setGenderNotice('')
+    const dictLang = termLanguage.split('-')[0]
     try {
-      const dictLang = fromLang.split('-')[0]
-      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictLang}/${encodeURIComponent(term.trim())}`, { signal: AbortSignal.timeout(10000) })
-      
-      let foundDef = ''
-      let foundExTl = ''
-      let foundPronunciation = ''
-
-      if (res.ok) {
-        const data = await res.json()
-        if (data && data.length > 0) {
-          const meaning = data[0].meanings?.[0]
-          const def = meaning?.definitions?.[0]
-          if (def) {
-            foundDef = def.definition || ''
-            foundExTl = def.example || ''
-          }
-          foundPronunciation = data[0].phonetic || ''
-        }
+      const [dictionary, translated, sourceForms] = await Promise.allSettled([
+        fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictLang}/${encodeURIComponent(term.trim())}`, { signal: AbortSignal.timeout(10000) }).then(async res => {
+          if (!res.ok && res.status !== 404) throw new Error('Dictionary unavailable')
+          return res.ok ? res.json() : []
+        }),
+        translateText(term.trim(), translationLanguage),
+        sourceGenderLanguage ? lookupGenderForms(term, sourceGenderLanguage) : Promise.resolve(undefined),
+      ])
+      if (version !== lookupVersion.current) return
+      let partial = [dictionary, translated, sourceForms].some(result => result.status === 'rejected')
+      const data = dictionary.status === 'fulfilled' ? dictionary.value : []
+      const entry = Array.isArray(data) ? data[0] : undefined
+      const definitionResult = entry?.meanings?.[0]?.definitions?.[0]
+      const foundExample = typeof definitionResult?.example === 'string' ? definitionResult.example : ''
+      if (typeof definitionResult?.definition === 'string') setDefinition(prev => prev || definitionResult.definition)
+      if (typeof entry?.phonetic === 'string') setPronunciation(prev => prev || entry.phonetic)
+      if (foundExample) setExampleTranslation(prev => prev || foundExample)
+      const translatedTerm = translated.status === 'fulfilled' ? translated.value : ''
+      if (translatedTerm) setTranslation(prev => prev || translatedTerm)
+      const foundSource = sourceForms.status === 'fulfilled' ? sourceForms.value : undefined
+      if (foundSource) {
+        setTermForms(prev => ({ ...foundSource, masculine: prev?.masculine || foundSource.masculine, feminine: prev?.feminine || foundSource.feminine }))
       }
-
-      if (foundDef) setDefinition(foundDef)
-      if (foundExTl) setExampleTranslation(foundExTl)
-      if (foundPronunciation) setPronunciation(foundPronunciation)
-
-      const translatedTerm = await translateText(term, learnLang)
-      if (translatedTerm && translatedTerm !== term) {
-        setTranslation(translatedTerm)
+      // Use the visible translation when the user has already supplied one.
+      const targetTerm = translation.trim() || translatedTerm
+      const [targetForms, translatedExample] = await Promise.allSettled([
+        targetGenderLanguage && targetTerm ? lookupGenderForms(targetTerm, targetGenderLanguage) : Promise.resolve(undefined),
+        foundExample ? translateText(foundExample, translationLanguage) : Promise.resolve(''),
+      ])
+      if (version !== lookupVersion.current) return
+      partial ||= targetForms.status === 'rejected' || translatedExample.status === 'rejected'
+      const foundTarget = targetForms.status === 'fulfilled' ? targetForms.value : undefined
+      if (foundTarget) {
+        setTranslationForms(prev => ({ ...foundTarget, masculine: prev?.masculine || foundTarget.masculine, feminine: prev?.feminine || foundTarget.feminine }))
       }
-
-      if (foundExTl) {
-        const translatedExample = await translateText(foundExTl, learnLang)
-        if (translatedExample) {
-          setExample(translatedExample)
-        }
-      }
+      if (translatedExample.status === 'fulfilled' && translatedExample.value) setExample(prev => prev || translatedExample.value)
+      if ((sourceGenderLanguage && !foundSource) || (targetGenderLanguage && !foundTarget)) setGenderNotice(t('genderNotFound'))
+      if (partial) setFetchError(t('lookupPartial'))
     } catch {
-      setFetchError(t('alertFetchFailed'))
-    } finally { setIsFetching(false) }
+      if (version === lookupVersion.current) setFetchError(t('lookupPartial'))
+    } finally { if (version === lookupVersion.current) setIsFetching(false) }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -301,6 +319,10 @@ function WordForm({
       id: initialWord?.id || 'w-' + Date.now(),
       term: term.trim(),
       translation,
+      termLanguage,
+      translationLanguage,
+      termForms: termForms && (termForms.masculine.trim() || termForms.feminine.trim()) ? { ...termForms, masculine: termForms.masculine.trim(), feminine: termForms.feminine.trim() } : undefined,
+      translationForms: translationForms && (translationForms.masculine.trim() || translationForms.feminine.trim()) ? { ...translationForms, masculine: translationForms.masculine.trim(), feminine: translationForms.feminine.trim() } : undefined,
       pronunciation,
       definition,
       example,
@@ -315,6 +337,7 @@ function WordForm({
       <h2 className="page-title">{initialWord ? t('formEditWord') : t('formAddWord')}</h2>
       <p className="page-subtitle">{initialWord ? t('editingIn') : t('addingTo')} <strong>{conceptName}</strong></p>
 
+      <fieldset className="word-fields" disabled={isFetching}>
       <div className="form-group">
         <label htmlFor="field-1">{t('term')}</label>
         <div className="input-with-button">
@@ -325,6 +348,10 @@ function WordForm({
             onChange={(e) => {
               setTerm(e.target.value)
               setTranslation('')
+              setTermForms(undefined)
+              setTranslationForms(undefined)
+              setGenderNotice('')
+              setFetchError('')
               setPronunciation('')
               setDefinition('')
               setExample('')
@@ -337,7 +364,7 @@ function WordForm({
             type="button"
             className="ghost-btn fetch-btn"
             onClick={handleFetchDictionary}
-            disabled={isFetching}
+            disabled={isFetching || !term.trim()}
           >
             {isFetching ? t('lookingUp') : t('fetch')}
           </button>
@@ -345,16 +372,21 @@ function WordForm({
       </div>
 
       {fetchError && <p className="form-error" role="alert">{fetchError}</p>}
+      {sourceGenderLanguage && <GenderFields id="term-gender" label={t('sourceWord')} forms={termForms || { language: sourceGenderLanguage, masculine: '', feminine: '' }} onChange={setTermForms} />}
       <div className="form-group">
         <label htmlFor="field-2">{t('translation')}</label>
         <input id="field-2"
           className="form-input"
           value={translation}
-          onChange={(e) => setTranslation(e.target.value)}
+          onChange={(e) => { setTranslation(e.target.value); setTranslationForms(undefined); setGenderNotice('') }}
           placeholder={t('translationPlaceholder')}
         />
       </div>
 
+      {targetGenderLanguage && <GenderFields id="translation-gender" label={t('translatedWord')} forms={translationForms || { language: targetGenderLanguage, masculine: '', feminine: '' }} onChange={setTranslationForms} />}
+      {genderNotice && <p className="gender-hint" role="status">{genderNotice}</p>}
+      </fieldset>
+      <fieldset className="word-fields" disabled={isFetching}>
       <div className="form-group">
         <label htmlFor="field-3">{t('pronunciation')}</label>
         <input id="field-3"
@@ -425,6 +457,7 @@ function WordForm({
         )}
       </div>
 
+      </fieldset>
       <div className="card-actions mt-20">
         <button type="button" className="ghost-btn" onClick={onCancel}>
           {t('cancel')}
@@ -619,9 +652,9 @@ function App() {
       }
     }
     return filteredWords.filter(
-      (word) => bookmarkedWordIds.includes(word.id) || !learnedWordIds.includes(word.id),
+      (word) => !learnedWordIds.includes(word.id),
     )
-  }, [allWords, tree, reviewFilterId, bookmarkedWordIds, learnedWordIds])
+  }, [allWords, tree, reviewFilterId, learnedWordIds])
 
   const allConceptsList = useMemo(() => {
     const list: { id: string; name: string }[] = []
@@ -788,6 +821,8 @@ function App() {
   const handleDeleteWordClick = () => {
     if (!currentWord) return
     if (!window.confirm(t('confirmDelete'))) return
+    setBookmarkedWordIds(prev => prev.filter(id => id !== currentWord.id))
+    setLearnedWordIds(prev => prev.filter(id => id !== currentWord.id))
 
     const processNodes = (nodes: ConceptNode[]): ConceptNode[] => {
       return nodes.map(n => {
@@ -891,12 +926,11 @@ function App() {
     moveCard(1)
   }
 
-  const toggleBookmark = () => {
-    if (!currentWord) return
+  const toggleBookmark = (wordId: string) => {
     setBookmarkedWordIds((prev) =>
-      prev.includes(currentWord.id)
-        ? prev.filter((id) => id !== currentWord.id)
-        : [...prev, currentWord.id],
+      prev.includes(wordId)
+        ? prev.filter((id) => id !== wordId)
+        : [...prev, wordId],
     )
   }
 
@@ -905,9 +939,6 @@ function App() {
       recordCardLearned(wordId, totalCount)
       if (!learnedWordIds.includes(wordId)) {
         setLearnedWordIds((prev) => [...prev, wordId])
-      }
-      if (bookmarkedWordIds.includes(wordId)) {
-        setBookmarkedWordIds((prev) => prev.filter((id) => id !== wordId))
       }
     } else {
       if (learnedWordIds.includes(wordId)) {
@@ -1124,7 +1155,7 @@ function App() {
           {/* ─── LEARN: Card view ─── */}
           {activeTab === 'learn' && learnView === 'card' && currentWord && (
             <>
-              <section className="learn-card">
+              <section className={`learn-card${bookmarkedWordIds.includes(currentWord.id) ? ' is-collected' : ''}`}>
                 <div className="learn-image">
                   <img
                     className="learn-image-media"
@@ -1139,6 +1170,8 @@ function App() {
                       <h1 className="word-term">{currentWord.term}</h1>
                       <p className="word-translation">{currentWord.translation}</p>
                       <p className="word-pronunciation">{currentWord.pronunciation}</p>
+                      <GenderSummary forms={currentWord.termForms} />
+                      <GenderSummary forms={currentWord.translationForms} />
                     </div>
                     <div className="card-actions-top">
                       <button 
@@ -1173,8 +1206,8 @@ function App() {
                     <button className="primary-btn" onClick={markLearned}>
                       {t('markLearned')}
                     </button>
-                    <button className="bookmark-btn" onClick={toggleBookmark} aria-label={t('starred')} aria-pressed={bookmarkedWordIds.includes(currentWord.id)}>
-                      <Glyph name="star" />
+                    <button className="bookmark-btn" onClick={() => toggleBookmark(currentWord.id)} aria-label={t(bookmarkedWordIds.includes(currentWord.id) ? 'removeCollected' : 'collectWord')} aria-pressed={bookmarkedWordIds.includes(currentWord.id)}>
+                      <Glyph name="star" /><span>{t(bookmarkedWordIds.includes(currentWord.id) ? 'collected' : 'collectWord')}</span>
                     </button>
                   </div>
                 </div>
@@ -1297,12 +1330,15 @@ function App() {
                   ) : (
                     <div className="review-list">
                       {reviewQueue.map((word) => (
-                        <article key={word.id} className="review-item">
+                        <article key={word.id} className={`review-item${bookmarkedWordIds.includes(word.id) ? ' is-collected' : ''}`}>
                           <div>
                             <strong>{word.term}</strong>
                             <span className="review-tl">{word.translation}</span>
+                            <GenderSummary forms={word.termForms} compact />
+                            <GenderSummary forms={word.translationForms} compact />
                           </div>
                           <div className="review-actions">
+                            <button className="bookmark-btn compact" onClick={() => toggleBookmark(word.id)} aria-label={`${t(bookmarkedWordIds.includes(word.id) ? 'removeCollected' : 'collectWord')}: ${word.term}`} aria-pressed={bookmarkedWordIds.includes(word.id)}><Glyph name="star" /></button>
                             <button
                               className="review-again"
                               onClick={() => handleReviewOutcome(word.id, false)}
@@ -1715,9 +1751,10 @@ function App() {
                             {bookmarkedWords.map(word => {
                               const isLearned = learnedWordIds.includes(word.id)
                               return (
-                                <div
+                                <button
+                                  type="button"
                                   key={word.id}
-                                  className="collected-word-item"
+                                  className="collected-word-item is-collected"
                                   onClick={() => {
                                     const result = findConceptAndIndexForWord(tree, word.id)
                                     if (result) {
@@ -1735,13 +1772,15 @@ function App() {
                                     <div className="collected-word-text">
                                       <span className="collected-word-term">{word.term}</span>
                                       <span className="collected-word-translation">{word.translation}</span>
+                                      <GenderSummary forms={word.termForms} compact />
+                                      <GenderSummary forms={word.translationForms} compact />
                                     </div>
                                   </div>
                                   <div className="collected-word-right">
-                                    <span className="collected-word-bookmark">★</span>
+                                    <span className="collected-word-bookmark" aria-label={t('collected')}><Glyph name="star" /></span>
                                     <span className="collected-word-go">›</span>
                                   </div>
-                                </div>
+                                </button>
                               )
                             })}
                           </div>

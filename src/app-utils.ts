@@ -59,6 +59,26 @@ export interface VocabWord {
   exampleTranslation: string
   localeTag: string
   image: string
+  termForms?: GenderForms
+  translationForms?: GenderForms
+  termLanguage?: string
+  translationLanguage?: string
+}
+
+export interface GenderForms {
+  language: 'fr' | 'es'
+  masculine: string
+  feminine: string
+  sourceUrl?: string
+}
+
+export function isGenderForms(value: unknown): value is GenderForms {
+  if (!value || typeof value !== 'object') return false
+  const forms = value as GenderForms
+  return (forms.language === 'fr' || forms.language === 'es')
+    && typeof forms.masculine === 'string' && typeof forms.feminine === 'string'
+    && (forms.sourceUrl === undefined || (typeof forms.sourceUrl === 'string'
+      && /^https:\/\/en\.wiktionary\.org\/(wiki\/|w\/index\.php\?)/.test(forms.sourceUrl)))
 }
 
 export interface ConceptNode {
@@ -75,6 +95,10 @@ export function isConceptTree(value: unknown): value is ConceptNode {
   const node = value as ConceptNode
   return typeof node.id === 'string' && typeof node.name === 'string'
     && (node.children === undefined || (Array.isArray(node.children) && node.children.every(isConceptTree)))
-    && (node.words === undefined || (Array.isArray(node.words) && node.words.every(word => word && ['id', 'term', 'translation', 'definition', 'pronunciation', 'example', 'exampleTranslation', 'image', 'localeTag'].every(key => typeof word[key as keyof VocabWord] === 'string'))))
+    && (node.words === undefined || (Array.isArray(node.words) && node.words.every(word => word && ['id', 'term', 'translation', 'definition', 'pronunciation', 'example', 'exampleTranslation', 'image', 'localeTag'].every(key => typeof word[key as keyof VocabWord] === 'string')
+      && (word.termForms === undefined || isGenderForms(word.termForms))
+      && (word.translationForms === undefined || isGenderForms(word.translationForms))
+      && (word.termLanguage === undefined || typeof word.termLanguage === 'string')
+      && (word.translationLanguage === undefined || typeof word.translationLanguage === 'string'))))
 }
 

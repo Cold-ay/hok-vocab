@@ -138,3 +138,40 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .mobile-frame { padding-top: env(safe-area-inset-top, 0px); }
 .app-shell .top-bar { padding-top: 0; }
 .sidebar { top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Collection stays separate from learning progress. */
+.app-shell { --collection-bg: #eeecfc; --collection-ink: #4334b5; --collection-line: #b8b0ef; }
+.app-shell.dark { --collection-bg: #342d56; --collection-ink: #d8d2ff; --collection-line: #8272c7; }
+.bookmark-btn { width: auto; min-height: 48px; padding: 10px 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 650; flex-shrink: 0; }
+.bookmark-btn.compact { width: 48px; height: 48px; padding: 10px; }
+.bookmark-btn[aria-pressed="true"] { background: var(--collection-bg); color: var(--collection-ink); border-color: var(--collection-line); }
+.bookmark-btn[aria-pressed="true"] svg, .collected-word-bookmark svg { fill: currentColor; }
+.learn-card.is-collected { border-color: var(--collection-line); }
+.review-item.is-collected, .collected-word-item.is-collected { background: var(--collection-bg); border-color: var(--collection-line); }
+.collected-word-bookmark { color: var(--collection-ink); display: inline-flex; }
+.collected-word-item { text-align: left; width: 100%; color: var(--text); font: inherit; }
+.review-item > div:first-child, .collected-word-text { min-width: 0; overflow-wrap: anywhere; }
+.word-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.gender-fields { min-width: 0; border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 8px 0 20px; background: var(--soft); }
+.gender-fields legend { color: var(--text); font-size: 14px; font-weight: 650; padding: 0 6px; }
+.gender-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.gender-inputs .form-group { margin-bottom: 0; }
+.gender-hint { font-size: 13px; line-height: 1.6; color: var(--muted); margin: 0 0 12px; }
+.gender-attribution { display: block; margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.gender-attribution a { color: var(--accent); text-underline-offset: 3px; }
+.gender-summary { margin-top: 16px; font-size: 14px; }
+.gender-summary h4 { margin: 0 0 8px; font-size: 12px; font-weight: 650; color: var(--muted); }
+.gender-summary dl { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.gender-summary dl > div { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 0; overflow-wrap: anywhere; }
+.gender-summary dt { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.gender-summary dd { margin: 0; color: var(--text); font-weight: 600; }
+.gender-summary.compact { margin-top: 8px; font-size: 12px; }
+.gender-summary.compact dl > div { padding: 4px 8px; background: var(--surface); }
+@media (max-width: 480px) {
+  .gender-inputs { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .card-actions { flex-wrap: wrap; }
+  .card-actions > .bookmark-btn { flex: 1; }
+  .review-item { flex-wrap: wrap; gap: 12px; }
+  .review-actions { flex-wrap: wrap; }
+  .review-actions > .bookmark-btn { flex: 0 0 48px; }
+}

@@ -3,6 +3,22 @@ import { createContext, useContext } from 'react'
 export type UiLang = 'en' | 'fr' | 'es' | 'zh-TW' | 'zh-CN' | 'ko' | 'ja'
 
 const en = {
+  collectWord: "Collect word",
+  collected: "Collected",
+  removeCollected: "Remove from collection",
+  genderForms: "Gender forms",
+  masculine: "Masculine",
+  feminine: "Feminine",
+  genderHint: "Optional. Not every word has two forms. Look up fills available dictionary forms; review before saving.",
+  genderNotFound: "No gender form found. Add it manually if applicable.",
+  lookupPartial: "Some lookups were unavailable. Your entries are kept; you can save manually.",
+  wiktionarySource: "Based on Wiktionary",
+  sameGenderForm: "Same spelling for both genders",
+  french: "French",
+  spanish: "Spanish",
+  sourceWord: "Source word",
+  translatedWord: "Translation",
+
   privacyData: 'Privacy & data',
   previousMonth: 'Previous month', nextMonth: 'Next month',
   previousWord: 'Previous word', nextWord: 'Next word',
@@ -165,6 +181,23 @@ type MessageKey = keyof typeof en
 
 const fr: Record<MessageKey, string> = {
   ...en,
+  collectWord: "Ajouter à la collection",
+  collected: "Dans la collection",
+  removeCollected: "Retirer de la collection",
+  genderForms: "Formes de genre",
+  masculine: "Masculin",
+  feminine: "Féminin",
+  genderHint: "Facultatif. Tous les mots n’ont pas deux formes. La recherche remplit les formes disponibles ; vérifiez avant d’enregistrer.",
+  genderNotFound: "Aucune forme trouvée. Ajoutez-la si nécessaire.",
+  lookupPartial: "Certaines recherches ont échoué. Vos saisies sont conservées.",
+  wiktionarySource: "D’après Wiktionary",
+  sameGenderForm: "Même orthographe pour les deux genres",
+  french: "Français",
+  spanish: "Espagnol",
+  sourceWord: "Mot source",
+  translatedWord: "Traduction",
+
+
   privacyData: 'Confidentialité et données',
   yourWorkspace: "VOTRE ESPACE",
   mainNavigation: "Navigation principale",
@@ -324,6 +357,23 @@ const fr: Record<MessageKey, string> = {
 
 const es: Record<MessageKey, string> = {
   ...en,
+  collectWord: "Coleccionar palabra",
+  collected: "Coleccionada",
+  removeCollected: "Quitar de la colección",
+  genderForms: "Formas de género",
+  masculine: "Masculino",
+  feminine: "Femenino",
+  genderHint: "Opcional. No todas las palabras tienen dos formas. La búsqueda completa las disponibles; revíselas antes de guardar.",
+  genderNotFound: "No se encontró una forma. Añádala si corresponde.",
+  lookupPartial: "Algunas búsquedas fallaron. Se conservan sus datos.",
+  wiktionarySource: "Basado en Wiktionary",
+  sameGenderForm: "Misma escritura para ambos géneros",
+  french: "Francés",
+  spanish: "Español",
+  sourceWord: "Palabra original",
+  translatedWord: "Traducción",
+
+
   privacyData: 'Privacidad y datos',
   yourWorkspace: "TU ESPACIO",
   mainNavigation: "Navegación principal",
@@ -483,6 +533,23 @@ const es: Record<MessageKey, string> = {
 
 const zhTW: Record<MessageKey, string> = {
   ...en,
+  collectWord: "收藏單字",
+  collected: "已收藏",
+  removeCollected: "取消收藏",
+  genderForms: "陰陽性詞形",
+  masculine: "陽性",
+  feminine: "陰性",
+  genderHint: "選填。並非每個字都有兩種詞形。查詢會填入字典提供的詞形，儲存前請確認。",
+  genderNotFound: "找不到詞形，可按需要手動填寫。",
+  lookupPartial: "部分查詢暫時無法使用，已保留輸入內容，可手動儲存。",
+  wiktionarySource: "資料來源：維基詞典",
+  sameGenderForm: "陰陽性拼寫相同",
+  french: "法文",
+  spanish: "西班牙文",
+  sourceWord: "原文",
+  translatedWord: "翻譯",
+
+
   privacyData: '隱私與資料',
   yourWorkspace: "你的學習空間",
   mainNavigation: "主要導覽",
@@ -642,6 +709,23 @@ const zhTW: Record<MessageKey, string> = {
 
 const zhCN: Record<MessageKey, string> = {
   ...en,
+  collectWord: "收藏单词",
+  collected: "已收藏",
+  removeCollected: "取消收藏",
+  genderForms: "阴阳性词形",
+  masculine: "阳性",
+  feminine: "阴性",
+  genderHint: "选填。并非每个词都有两种词形。查询会填入字典提供的词形，保存前请确认。",
+  genderNotFound: "找不到词形，可按需手动填写。",
+  lookupPartial: "部分查询暂时无法使用，已保留输入内容，可手动保存。",
+  wiktionarySource: "资料来源：维基词典",
+  sameGenderForm: "阴阳性拼写相同",
+  french: "法语",
+  spanish: "西班牙语",
+  sourceWord: "原文",
+  translatedWord: "翻译",
+
+
   privacyData: '隐私与数据',
   yourWorkspace: "你的学习空间",
   mainNavigation: "主要导航",
@@ -801,6 +885,23 @@ const zhCN: Record<MessageKey, string> = {
 
 const ko: Record<MessageKey, string> = {
   ...en,
+  collectWord: "단어 수집",
+  collected: "수집됨",
+  removeCollected: "수집 해제",
+  genderForms: "성별 어형",
+  masculine: "남성형",
+  feminine: "여성형",
+  genderHint: "선택 사항입니다. 모든 단어에 두 형태가 있는 것은 아닙니다. 검색 결과를 저장 전에 확인하세요.",
+  genderNotFound: "어형을 찾지 못했습니다. 필요하면 직접 입력하세요.",
+  lookupPartial: "일부 검색을 사용할 수 없습니다. 입력한 내용은 유지됩니다.",
+  wiktionarySource: "위키낱말사전 기반",
+  sameGenderForm: "남성형과 여성형의 철자가 같음",
+  french: "프랑스어",
+  spanish: "스페인어",
+  sourceWord: "원어",
+  translatedWord: "번역",
+
+
   privacyData: '개인정보 및 데이터',
   yourWorkspace: "나의 학습 공간",
   mainNavigation: "주 메뉴",
@@ -960,6 +1061,23 @@ const ko: Record<MessageKey, string> = {
 
 const ja: Record<MessageKey, string> = {
   ...en,
+  collectWord: "単語を収集",
+  collected: "収集済み",
+  removeCollected: "収集から削除",
+  genderForms: "性別の語形",
+  masculine: "男性形",
+  feminine: "女性形",
+  genderHint: "任意です。すべての単語に両方の形があるわけではありません。検索結果は保存前に確認してください。",
+  genderNotFound: "語形が見つかりません。必要に応じて入力してください。",
+  lookupPartial: "一部の検索が利用できません。入力内容は保持されます。",
+  wiktionarySource: "ウィクショナリーに基づく",
+  sameGenderForm: "両方の性で同じ綴り",
+  french: "フランス語",
+  spanish: "スペイン語",
+  sourceWord: "原語",
+  translatedWord: "翻訳",
+
+
   privacyData: 'プライバシーとデータ',
   yourWorkspace: "学習スペース",
   mainNavigation: "メインナビゲーション",

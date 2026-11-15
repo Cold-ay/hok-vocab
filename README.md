@@ -47,3 +47,9 @@ Version 1.0.0 (build 1) is prepared for independent iOS and Android releases. Se
 The two GitHub Actions templates in `store/workflow-templates/` build unsigned native verification artifacts once enabled with workflow-authorized GitHub access. They are templates because the current GitHub token lacks permission to create workflows. They do not publish to either store. Store listing drafts, icons, a Play feature graphic, privacy inventory, and a bundled privacy page are included. Supply real support/contact details and host the privacy page before submitting.
 
 Publishing setup (November 10, 2026): the iOS target is 15.0+ for the installed Xcode 27 toolchain. Public support/privacy sources are in docs/ and are published through the repository’s GitHub Pages branch deployment.
+
+## Collection and gender forms
+
+Collected words use a filled star and a tinted surface. Collection status is independent of learned status: marking a word learned or choosing Got it keeps it in your collection.
+
+French and Spanish words and translations have optional masculine/feminine fields. Look up fills dictionary-attested forms from Wiktionary, with source and CC BY-SA attribution. Single-gender nouns keep the other field empty; shared forms may have identical spelling. Fields remain editable, manual entries take priority, and old libraries continue to load. Saved words retain their own language metadata when global preferences change. Lookup failures leave manual entry available.

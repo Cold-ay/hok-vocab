@@ -3,7 +3,7 @@
 This is a technical inventory to help the publisher complete store forms, not a completed legal/account declaration.
 
 - Local storage: words, images selected by the user, concepts, bookmarks, daily activity, goals, and language/theme preferences.
-- Network: optional dictionary requests go to api.dictionaryapi.dev; optional translation requests (including source-language changes) go to translate.googleapis.com. Entered text and the network's normal IP/request metadata reach these providers.
+- Network: optional dictionary requests go to api.dictionaryapi.dev; optional translation requests (including source-language changes) go to translate.googleapis.com. Optional French/Spanish gender lookups send source/translated words to en.wiktionary.org. Entered text and the network's normal IP/request metadata reach these providers.
 - No account, advertising SDK, analytics SDK, tracking domain, purchases, location access, or push-notification service is configured.
 - Selected images are read using the system file picker and stored locally. The app does not request broad photo-library or camera access.
 - Removing app/site storage deletes the local library. There is no publisher-run server holding an account to delete.

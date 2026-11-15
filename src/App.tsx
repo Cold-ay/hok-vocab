@@ -7,6 +7,8 @@ import { getDateKey, loadJson, saveJson, computeStreak, formatStudyTime } from '
 import type { DailyLog, VocabWord, ConceptNode, GenderForms } from './app-utils'
 import { GenderFields, GenderSummary } from './WordGenderForms'
 import { genderLanguage, lookupGenderForms } from './gender-lookup'
+import { translateText, TranslationError } from './translation'
+import { lookupDefinition } from './dictionary'
 
 type TabKey = 'home' | 'learn' | 'stats' | 'me'
 type ThemeMode = 'light' | 'dark'
@@ -77,15 +79,6 @@ const LANGUAGES = [
   { code: 'zh-CN', label: 'Simplified Chinese' },
   { code: 'zh-TW', label: 'Traditional Chinese' },
 ]
-
-const translateText = async (text: string, toLang: string): Promise<string> => {
-  if (!text) return text
-  const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(toLang)}&dt=t&q=${encodeURIComponent(text)}`, { signal: AbortSignal.timeout(10000) })
-  if (!res.ok) throw new Error('Translation unavailable')
-  const data = await res.json()
-  if (!Array.isArray(data?.[0])) throw new Error('Invalid translation response')
-  return data[0].map((item: string[]) => item[0]).join('')
-}
 
 function collectWords(node: ConceptNode): VocabWord[] {
   const ownWords = node.words ?? []
@@ -270,21 +263,26 @@ function WordForm({
     const dictLang = termLanguage.split('-')[0]
     try {
       const [dictionary, translated, sourceForms] = await Promise.allSettled([
-        fetch(`https://api.dictionaryapi.dev/api/v2/entries/${dictLang}/${encodeURIComponent(term.trim())}`, { signal: AbortSignal.timeout(10000) }).then(async res => {
-          if (!res.ok && res.status !== 404) throw new Error('Dictionary unavailable')
-          return res.ok ? res.json() : []
-        }),
-        translateText(term.trim(), translationLanguage),
+        lookupDefinition(term, dictLang),
+        translation.trim() ? Promise.resolve(translation.trim()) : translateText(term.trim(), translationLanguage, termLanguage),
         sourceGenderLanguage ? lookupGenderForms(term, sourceGenderLanguage) : Promise.resolve(undefined),
       ])
       if (version !== lookupVersion.current) return
-      let partial = [dictionary, translated, sourceForms].some(result => result.status === 'rejected')
+      const issues: string[] = []
+      if (dictionary.status === 'rejected') issues.push(t('dictionaryUnavailable'))
+      if (translated.status === 'rejected') {
+        const reason = translated.reason
+        issues.push(t(reason instanceof TranslationError && reason.reason === 'rate-limited' ? 'translationLimited'
+          : reason instanceof TranslationError && reason.reason === 'too-long' ? 'translationTooLong' : 'translationUnavailable'))
+      }
       const data = dictionary.status === 'fulfilled' ? dictionary.value : []
-      const entry = Array.isArray(data) ? data[0] : undefined
+      const entry = (Array.isArray(data) ? data[0] : undefined) as { phonetic?: string; meanings?: { definitions?: { definition?: string; example?: string }[] }[] } | undefined
       const definitionResult = entry?.meanings?.[0]?.definitions?.[0]
       const foundExample = typeof definitionResult?.example === 'string' ? definitionResult.example : ''
-      if (typeof definitionResult?.definition === 'string') setDefinition(prev => prev || definitionResult.definition)
-      if (typeof entry?.phonetic === 'string') setPronunciation(prev => prev || entry.phonetic)
+      const foundDefinition = typeof definitionResult?.definition === 'string' ? definitionResult.definition : ''
+      const foundPronunciation = typeof entry?.phonetic === 'string' ? entry.phonetic : ''
+      if (foundDefinition) setDefinition(prev => prev || foundDefinition)
+      if (foundPronunciation) setPronunciation(prev => prev || foundPronunciation)
       if (foundExample) setExampleTranslation(prev => prev || foundExample)
       const translatedTerm = translated.status === 'fulfilled' ? translated.value : ''
       if (translatedTerm) setTranslation(prev => prev || translatedTerm)
@@ -296,19 +294,21 @@ function WordForm({
       const targetTerm = translation.trim() || translatedTerm
       const [targetForms, translatedExample] = await Promise.allSettled([
         targetGenderLanguage && targetTerm ? lookupGenderForms(targetTerm, targetGenderLanguage) : Promise.resolve(undefined),
-        foundExample ? translateText(foundExample, translationLanguage) : Promise.resolve(''),
+        foundExample && !example.trim() ? translateText(foundExample, translationLanguage, 'en') : Promise.resolve(''),
       ])
       if (version !== lookupVersion.current) return
-      partial ||= targetForms.status === 'rejected' || translatedExample.status === 'rejected'
+      if (sourceForms.status === 'rejected' || targetForms.status === 'rejected') issues.push(t('genderUnavailable'))
+      if (translatedExample.status === 'rejected') issues.push(t('exampleUnavailable'))
       const foundTarget = targetForms.status === 'fulfilled' ? targetForms.value : undefined
       if (foundTarget) {
         setTranslationForms(prev => ({ ...foundTarget, masculine: prev?.masculine || foundTarget.masculine, feminine: prev?.feminine || foundTarget.feminine }))
       }
       if (translatedExample.status === 'fulfilled' && translatedExample.value) setExample(prev => prev || translatedExample.value)
-      if ((sourceGenderLanguage && !foundSource) || (targetGenderLanguage && !foundTarget)) setGenderNotice(t('genderNotFound'))
-      if (partial) setFetchError(t('lookupPartial'))
+      if ((sourceGenderLanguage && sourceForms.status === 'fulfilled' && !foundSource)
+        || (targetGenderLanguage && targetTerm && targetForms.status === 'fulfilled' && !foundTarget)) setGenderNotice(t('genderNotFound'))
+      if (issues.length) setFetchError(issues.join(' '))
     } catch {
-      if (version === lookupVersion.current) setFetchError(t('lookupPartial'))
+      if (version === lookupVersion.current) setFetchError(t('translationUnavailable'))
     } finally { if (version === lookupVersion.current) setIsFetching(false) }
   }
 
@@ -679,8 +679,8 @@ function App() {
     const processNodes = async (nodes: ConceptNode[]): Promise<ConceptNode[]> => {
       return Promise.all(nodes.map(async (n) => {
         const newWords = await Promise.all((n.words || []).map(async (w) => {
-          const translatedDef = await translateText(w.definition, newLang)
-          const translatedExTl = await translateText(w.exampleTranslation, newLang)
+          const translatedDef = await translateText(w.definition, newLang, fromLang)
+          const translatedExTl = await translateText(w.exampleTranslation, newLang, fromLang)
           return {
             ...w,
             definition: translatedDef,

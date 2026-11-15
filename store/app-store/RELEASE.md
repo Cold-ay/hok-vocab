@@ -1,6 +1,6 @@
 # App Store release kit
 
-Version 1.0.0, build 3, bundle ID `com.hok.vocab`. This kit contains source and artwork. Credentials are intentionally absent. An unsigned archive is a build-verification artifact and cannot be uploaded as an App Store release.
+Version 1.0.0, build 4, bundle ID `com.hok.vocab`. This kit contains source and artwork. Credentials are intentionally absent. An unsigned archive is a build-verification artifact and cannot be uploaded as an App Store release.
 
 ## Prepare
 

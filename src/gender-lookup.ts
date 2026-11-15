@@ -56,7 +56,7 @@ export function parseGenderForms(html: string, language: 'fr' | 'es'): GenderFor
 }
 
 export async function lookupGenderForms(term: string, language: 'fr' | 'es'): Promise<GenderForms | undefined> {
-  const word = term.trim().toLocaleLowerCase(language).replace(/^(?:le |la |les |un |une |el |los |las |una |unos |unas |l[’'])/i, '')
+  const word = term.trim().split(/\s*[/;,]\s*/)[0].toLocaleLowerCase(language).replace(/^(?:le |la |les |un |une |el |los |las |una |unos |unas |l[’'])/i, '')
   if (!word || word.length > 80 || /\s/.test(word)) return undefined
   const query = new URLSearchParams({ action: 'parse', page: word, prop: 'text', format: 'json', origin: '*' })
   const response = await fetch(`https://en.wiktionary.org/w/api.php?${query}`, { signal: AbortSignal.timeout(10000) })

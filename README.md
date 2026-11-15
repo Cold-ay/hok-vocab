@@ -53,3 +53,5 @@ Publishing setup (November 10, 2026): the iOS target is 15.0+ for the installed 
 Collected words use a filled star and a tinted surface. Collection status is independent of learned status: marking a word learned or choosing Got it keeps it in your collection.
 
 French and Spanish words and translations have optional masculine/feminine fields. Look up fills dictionary-attested forms from Wiktionary, with source and CC BY-SA attribution. Single-gender nouns keep the other field empty; shared forms may have identical spelling. Fields remain editable, manual entries take priority, and old libraries continue to load. Saved words retain their own language metadata when global preferences change. Lookup failures leave manual entry available.
+
+Online translation uses the documented MyMemory GET API with explicit source/target languages. Successful results are cached on device for seven days (100 entries); concurrent duplicate requests are shared. Definitions are requested from Free Dictionary API only for English, its supported endpoint. Lookup errors identify the affected service; missing entries are not network failures.

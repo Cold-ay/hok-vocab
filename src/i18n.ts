@@ -3,6 +3,13 @@ import { createContext, useContext } from 'react'
 export type UiLang = 'en' | 'fr' | 'es' | 'zh-TW' | 'zh-CN' | 'ko' | 'ja'
 
 const en = {
+  dictionaryUnavailable: "Definition lookup is unavailable. You can still save this word.",
+  translationLimited: "Translation limit reached. Try again later or enter a translation manually.",
+  translationTooLong: "This text is too long for online translation. Enter a shorter text or translate it manually.",
+  translationUnavailable: "Translation is unavailable. Check your connection or try again.",
+  genderUnavailable: "Gender lookup is unavailable. Your translation is kept; you can enter the forms manually.",
+  exampleUnavailable: "Example translation is unavailable. The word translation is kept.",
+
   collectWord: "Collect word",
   collected: "Collected",
   removeCollected: "Remove from collection",
@@ -11,7 +18,6 @@ const en = {
   feminine: "Feminine",
   genderHint: "Optional. Not every word has two forms. Look up fills available dictionary forms; review before saving.",
   genderNotFound: "No gender form found. Add it manually if applicable.",
-  lookupPartial: "Some lookups were unavailable. Your entries are kept; you can save manually.",
   wiktionarySource: "Based on Wiktionary",
   sameGenderForm: "Same spelling for both genders",
   french: "French",
@@ -181,6 +187,13 @@ type MessageKey = keyof typeof en
 
 const fr: Record<MessageKey, string> = {
   ...en,
+  dictionaryUnavailable: "La recherche de définition est indisponible. Vous pouvez enregistrer ce mot.",
+  translationLimited: "Limite de traduction atteinte. Réessayez plus tard ou saisissez la traduction.",
+  translationTooLong: "Ce texte est trop long pour la traduction en ligne. Raccourcissez-le ou traduisez-le manuellement.",
+  translationUnavailable: "Traduction indisponible. Vérifiez votre connexion ou réessayez.",
+  genderUnavailable: "Recherche des genres indisponible. La traduction est conservée ; saisissez les formes manuellement.",
+  exampleUnavailable: "Traduction de l’exemple indisponible. La traduction du mot est conservée.",
+
   collectWord: "Ajouter à la collection",
   collected: "Dans la collection",
   removeCollected: "Retirer de la collection",
@@ -189,7 +202,6 @@ const fr: Record<MessageKey, string> = {
   feminine: "Féminin",
   genderHint: "Facultatif. Tous les mots n’ont pas deux formes. La recherche remplit les formes disponibles ; vérifiez avant d’enregistrer.",
   genderNotFound: "Aucune forme trouvée. Ajoutez-la si nécessaire.",
-  lookupPartial: "Certaines recherches ont échoué. Vos saisies sont conservées.",
   wiktionarySource: "D’après Wiktionary",
   sameGenderForm: "Même orthographe pour les deux genres",
   french: "Français",
@@ -357,6 +369,13 @@ const fr: Record<MessageKey, string> = {
 
 const es: Record<MessageKey, string> = {
   ...en,
+  dictionaryUnavailable: "La definición no está disponible. Puede guardar la palabra.",
+  translationLimited: "Se alcanzó el límite de traducción. Inténtelo más tarde o escriba la traducción.",
+  translationTooLong: "El texto es demasiado largo para traducirlo en línea. Acórtelo o tradúzcalo manualmente.",
+  translationUnavailable: "Traducción no disponible. Compruebe la conexión o inténtelo de nuevo.",
+  genderUnavailable: "La búsqueda de género no está disponible. Se conserva la traducción; puede introducir las formas.",
+  exampleUnavailable: "La traducción del ejemplo no está disponible. Se conserva la traducción de la palabra.",
+
   collectWord: "Coleccionar palabra",
   collected: "Coleccionada",
   removeCollected: "Quitar de la colección",
@@ -365,7 +384,6 @@ const es: Record<MessageKey, string> = {
   feminine: "Femenino",
   genderHint: "Opcional. No todas las palabras tienen dos formas. La búsqueda completa las disponibles; revíselas antes de guardar.",
   genderNotFound: "No se encontró una forma. Añádala si corresponde.",
-  lookupPartial: "Algunas búsquedas fallaron. Se conservan sus datos.",
   wiktionarySource: "Basado en Wiktionary",
   sameGenderForm: "Misma escritura para ambos géneros",
   french: "Francés",
@@ -533,6 +551,13 @@ const es: Record<MessageKey, string> = {
 
 const zhTW: Record<MessageKey, string> = {
   ...en,
+  dictionaryUnavailable: "暫時無法查詢定義，仍可儲存單字。",
+  translationLimited: "翻譯服務已達用量上限，請稍後重試或手動填寫。",
+  translationTooLong: "文字超出線上翻譯長度限制，請縮短或手動翻譯。",
+  translationUnavailable: "暫時無法翻譯，請檢查網絡或重試。",
+  genderUnavailable: "暫時無法查詢陰陽性詞形，翻譯已保留，可手動填寫詞形。",
+  exampleUnavailable: "暫時無法翻譯例句，單字翻譯已保留。",
+
   collectWord: "收藏單字",
   collected: "已收藏",
   removeCollected: "取消收藏",
@@ -541,7 +566,6 @@ const zhTW: Record<MessageKey, string> = {
   feminine: "陰性",
   genderHint: "選填。並非每個字都有兩種詞形。查詢會填入字典提供的詞形，儲存前請確認。",
   genderNotFound: "找不到詞形，可按需要手動填寫。",
-  lookupPartial: "部分查詢暫時無法使用，已保留輸入內容，可手動儲存。",
   wiktionarySource: "資料來源：維基詞典",
   sameGenderForm: "陰陽性拼寫相同",
   french: "法文",
@@ -709,6 +733,13 @@ const zhTW: Record<MessageKey, string> = {
 
 const zhCN: Record<MessageKey, string> = {
   ...en,
+  dictionaryUnavailable: "暂时无法查询定义，仍可保存单词。",
+  translationLimited: "翻译服务已达用量上限，请稍后重试或手动填写。",
+  translationTooLong: "文字超出在线翻译长度限制，请缩短或手动翻译。",
+  translationUnavailable: "暂时无法翻译，请检查网络或重试。",
+  genderUnavailable: "暂时无法查询阴阳性词形，翻译已保留，可手动填写词形。",
+  exampleUnavailable: "暂时无法翻译例句，单词翻译已保留。",
+
   collectWord: "收藏单词",
   collected: "已收藏",
   removeCollected: "取消收藏",
@@ -717,7 +748,6 @@ const zhCN: Record<MessageKey, string> = {
   feminine: "阴性",
   genderHint: "选填。并非每个词都有两种词形。查询会填入字典提供的词形，保存前请确认。",
   genderNotFound: "找不到词形，可按需手动填写。",
-  lookupPartial: "部分查询暂时无法使用，已保留输入内容，可手动保存。",
   wiktionarySource: "资料来源：维基词典",
   sameGenderForm: "阴阳性拼写相同",
   french: "法语",
@@ -885,6 +915,13 @@ const zhCN: Record<MessageKey, string> = {
 
 const ko: Record<MessageKey, string> = {
   ...en,
+  dictionaryUnavailable: "뜻 검색을 사용할 수 없습니다. 단어는 저장할 수 있습니다.",
+  translationLimited: "번역 한도에 도달했습니다. 나중에 다시 시도하거나 직접 입력하세요.",
+  translationTooLong: "온라인 번역에 비해 텍스트가 너무 깁니다. 줄이거나 직접 번역하세요.",
+  translationUnavailable: "번역을 사용할 수 없습니다. 연결을 확인하거나 다시 시도하세요.",
+  genderUnavailable: "성별 어형 검색을 사용할 수 없습니다. 번역은 유지되며 어형은 직접 입력할 수 있습니다.",
+  exampleUnavailable: "예문 번역을 사용할 수 없습니다. 단어 번역은 유지됩니다.",
+
   collectWord: "단어 수집",
   collected: "수집됨",
   removeCollected: "수집 해제",
@@ -893,7 +930,6 @@ const ko: Record<MessageKey, string> = {
   feminine: "여성형",
   genderHint: "선택 사항입니다. 모든 단어에 두 형태가 있는 것은 아닙니다. 검색 결과를 저장 전에 확인하세요.",
   genderNotFound: "어형을 찾지 못했습니다. 필요하면 직접 입력하세요.",
-  lookupPartial: "일부 검색을 사용할 수 없습니다. 입력한 내용은 유지됩니다.",
   wiktionarySource: "위키낱말사전 기반",
   sameGenderForm: "남성형과 여성형의 철자가 같음",
   french: "프랑스어",
@@ -1061,6 +1097,13 @@ const ko: Record<MessageKey, string> = {
 
 const ja: Record<MessageKey, string> = {
   ...en,
+  dictionaryUnavailable: "定義を取得できません。単語は保存できます。",
+  translationLimited: "翻訳の利用上限に達しました。後で再試行するか手動で入力してください。",
+  translationTooLong: "オンライン翻訳には長すぎます。短くするか手動で翻訳してください。",
+  translationUnavailable: "翻訳を利用できません。接続を確認するか再試行してください。",
+  genderUnavailable: "性別の語形を検索できません。翻訳は保持されるので語形を入力できます。",
+  exampleUnavailable: "例文を翻訳できません。単語の翻訳は保持されます。",
+
   collectWord: "単語を収集",
   collected: "収集済み",
   removeCollected: "収集から削除",
@@ -1069,7 +1112,6 @@ const ja: Record<MessageKey, string> = {
   feminine: "女性形",
   genderHint: "任意です。すべての単語に両方の形があるわけではありません。検索結果は保存前に確認してください。",
   genderNotFound: "語形が見つかりません。必要に応じて入力してください。",
-  lookupPartial: "一部の検索が利用できません。入力内容は保持されます。",
   wiktionarySource: "ウィクショナリーに基づく",
   sameGenderForm: "両方の性で同じ綴り",
   french: "フランス語",

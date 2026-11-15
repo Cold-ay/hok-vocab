@@ -4,8 +4,6 @@ import Capacitor
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    var window: UIWindow?
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         return true
@@ -46,4 +44,39 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+// UIKit owns the storyboard window through its scene lifecycle on iPadOS 27+.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        for context in connectionOptions.urlContexts {
+            forward(context)
+        }
+        for activity in connectionOptions.userActivities {
+            self.scene(scene, continue: activity)
+        }
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        for context in URLContexts {
+            forward(context)
+        }
+    }
+
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
+    }
+
+    private func forward(_ context: UIOpenURLContext) {
+        var options: [UIApplication.OpenURLOptionsKey: Any] = [.openInPlace: context.options.openInPlace]
+        if let sourceApplication = context.options.sourceApplication {
+            options[.sourceApplication] = sourceApplication
+        }
+        if let annotation = context.options.annotation {
+            options[.annotation] = annotation
+        }
+        _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: context.url, options: options)
+    }
 }

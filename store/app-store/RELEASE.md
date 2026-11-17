@@ -29,3 +29,20 @@ For later updates, increment package.json version and release.config.json buildN
 Requirement checked 2026-10-31: https://developer.apple.com/news/upcoming-requirements/
 
 Publishing setup (November 10, 2026): the iOS target is 15.0+ for the installed Xcode 27 toolchain. Public support/privacy sources are in docs/ and are published through the repository’s GitHub Pages branch deployment.
+
+## Mac App Store
+
+The same Xcode app target supports Mac Catalyst with the bundle ID `com.hok.vocab`. Mac-only entitlements enable the app sandbox, outgoing dictionary/translation requests, and reading files explicitly chosen by the user. Mac icon sizes are included in the shared asset catalog.
+
+After `npm run cap:sync:ios`, open `ios/App/App.xcworkspace`, select **My Mac (Mac Catalyst)**, and archive with the same Apple team. Distribute this archive using **App Store Connect** to produce the Mac package; the iOS IPA is a separate upload. The macOS version in App Store Connect must match the archive's marketing version.
+
+For a command-line archive:
+
+```sh
+xcodebuild -workspace ios/App/App.xcworkspace -scheme App \
+  -configuration Release -destination 'generic/platform=macOS,variant=Mac Catalyst' \
+  -archivePath releases/mac-app-store/Hok.xcarchive \
+  DEVELOPMENT_TEAM="$HOK_APPLE_TEAM_ID" -allowProvisioningUpdates archive
+```
+
+Check the native Mac app with ordinary mouse and keyboard input, including word entry, optional lookups, collecting, practice, and persistence after reopening. Supply genuine Mac screenshots at an accepted size, such as 1440 × 900. Attach review evidence and complete platform-specific listing fields before adding the Mac version to the review draft. Uploading or adding an item for review does not replace the final submission step.

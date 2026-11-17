@@ -362,6 +362,10 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
+				SUPPORTS_MACCATALYST = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = App/MacCatalyst.entitlements;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -381,6 +385,10 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
+				SUPPORTS_MACCATALYST = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = App/MacCatalyst.entitlements;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
